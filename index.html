@@ -178,6 +178,7 @@
   .seg input{margin:0}
   .seg label:has(input:checked){background:var(--accent-soft);color:var(--accent-soft-ink);border-color:var(--accent)}
   form[data-mgmt="conservative"] .surg-only{display:none}
+  form:not([data-ins="public"]):not([data-ins="private"]) .ins-name{display:none}
 
   .todo{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
   .todo:last-child{border-bottom:0}
@@ -343,7 +344,8 @@
 <div id="modalRoot"></div>
 <div class="toast" id="toast" role="status"></div>
 
-<datalist id="dl_ins"><option>Ayushman Bharat / PMJAY</option><option>State government scheme</option><option>ECHS / CGHS</option><option>ESIC</option><option>Private insurance / TPA</option><option>Corporate</option><option>Cash / self-pay</option></datalist>
+<datalist id="dl_ins_public"><option>Ayushman Bharat / PMJAY</option><option>Mukh Mantri Sehat Bima Yojana</option><option>ECHS</option><option>CGHS</option><option>ESIC</option><option>State government scheme</option></datalist>
+<datalist id="dl_ins_private"><option>Star Health</option><option>HDFC ERGO</option><option>ICICI Lombard</option><option>Niva Bupa</option><option>Care Health</option><option>Bajaj Allianz</option><option>Tata AIG</option><option>New India Assurance</option><option>Corporate / TPA</option></datalist>
 <datalist id="dl_mode"><option>VC-AC</option><option>PC-AC</option><option>PRVC</option><option>SIMV-VC</option><option>SIMV-PC</option><option>PSV / CPAP</option><option>APRV</option><option>BiPAP</option><option>CPAP</option><option>HFNC</option></datalist>
 <datalist id="dl_abx"><option>Ceftriaxone</option><option>Cefoperazone-sulbactam</option><option>Piperacillin-tazobactam</option><option>Meropenem</option><option>Imipenem-cilastatin</option><option>Ertapenem</option><option>Vancomycin</option><option>Teicoplanin</option><option>Linezolid</option><option>Colistin</option><option>Polymyxin B</option><option>Amikacin</option><option>Gentamicin</option><option>Metronidazole</option><option>Clindamycin</option><option>Levofloxacin</option><option>Ciprofloxacin</option><option>Azithromycin</option><option>Doxycycline</option><option>Minocycline</option><option>Tigecycline</option><option>Ceftazidime-avibactam</option><option>Cefepime</option><option>Amoxicillin-clavulanate</option><option>Cefuroxime</option><option>Fluconazole</option><option>Voriconazole</option><option>Caspofungin</option><option>Micafungin</option><option>Amphotericin B</option></datalist>
 <datalist id="dl_freq"><option>OD</option><option>BD</option><option>TDS</option><option>QID</option><option>q6h</option><option>q8h</option><option>q12h</option><option>Stat</option><option>Continuous infusion</option><option>Extended infusion</option></datalist>
@@ -762,17 +764,40 @@
       F("weight", "Weight (kg)", "number", 2, {value:p.weight}) +
       F("bed", "ICU bed no.", "text", 2, {value:p.bed, req:true}) +
       F("admitDate", "Date of admission", "date", 2, {value:p.admitDate || today()}) +
-      F("insurance", "Type of insurance", "text", 2, {value:p.insurance, list:"dl_ins", ph:"Select or type"}) +
+      F("insType", "Type of insurance", "select", 2, {value:p.insType, opts:INS_TYPES}) +
+      F("insName", "Insurance name", "text", 6, {value:p.insName, cls:"ins-name", ph:"Select or type the name"}) +
     '</div>';
+  }
+  var INS_TYPES = [["","— Select —"],["public","Public insurance"],["private","Private insurance"],["cash","Cash / self-pay"]];
+  // One readable line for cards, search and the Google Sheet, e.g. "Public insurance: Ayushman Bharat / PMJAY".
+  function insLabel(d){
+    var t = (INS_TYPES.filter(function(x){ return x[0] === d.insType; })[0] || [])[1];
+    if(!d.insType) return d.insurance || "";
+    return d.insType === "cash" || !d.insName ? t : t + ": " + d.insName;
+  }
+  function withIns(d){
+    if(d.insType === "cash" || !d.insType) d.insName = "";
+    d.insurance = insLabel(d);
+    return d;
+  }
+  // Show the name box only for public/private, with suggestions to match.
+  function syncIns(form){
+    if(!form || !form.insType) return;
+    var t = form.insType.value; form.dataset.ins = t;
+    var inp = form.insName, lab = form.querySelector('label[for="' + inp.id + '"]');
+    inp.setAttribute("list", t === "private" ? "dl_ins_private" : "dl_ins_public");
+    lab.textContent = t === "private" ? "Name of private insurance / TPA" : "Name of public insurance / scheme";
   }
   function openAdmit(){
     modal('<h2>Admit patient</h2><p>Only the admission details here. Condition, diagnoses and everything else go in the patient\'s dashboard.</p><form id="admitNew">' + admitForm() +
       '<div class="r" style="margin-top:14px"><button class="btn" data-close type="button">Cancel</button><button class="btn primary" type="submit">Admit</button></div></form>',
       function(root, close){
         var f = $("#admitNew", root); $("[name=name]", f).focus();
+        syncIns(f);
+        f.addEventListener("change", function(e){ if(e.target.name === "insType") syncIns(f); });
         f.addEventListener("submit", async function(e){
           e.preventDefault();
-          var d = formData(f);
+          var d = withIns(formData(f));
           if(!d.name || !d.bed){ toast("Name and bed number are needed"); return; }
           var by = await needSig(); if(!by) return;
           var now = nowISO();
@@ -852,7 +877,7 @@
     },
     paint: function(p){
       if(!view.dirty.summary) fillForm($("[data-form=summary]"), {condition:p.condition || "", code:p.code || "", allergy:p.allergy || "", systems:p.systems || []});
-      if(!view.dirty.admit) fillForm($("[data-form=admit]"), p);
+      if(!view.dirty.admit){ fillForm($("[data-form=admit]"), p); syncIns($("[data-form=admit]")); }
       var t = today();
       var items = (p.interventions || []).filter(function(i){ return i.date === t || !i.done; })
         .sort(function(a, b){ return (a.done - b.done) || String(a.date).localeCompare(String(b.date)); });
@@ -1116,7 +1141,7 @@
       return commit(function(){ return {fields:{condition:d.condition, code:d.code, allergy:d.allergy, systems:d.systems || []}, log:ch.join(" · ")}; }, "Saved").then(function(ok){ if(ok) view.dirty.summary = false; });
     },
     admit: function(f, p){
-      var d = formData(f);
+      var d = withIns(formData(f));
       if(!d.name || !d.bed){ toast("Name and bed number are needed"); return; }
       return commit(function(){ return {fields:d, log:"Updated admission details"}; }, "Saved").then(function(ok){ if(ok) view.dirty.admit = false; });
     },
@@ -1380,6 +1405,7 @@
   viewEl.addEventListener("change", function(e){
     var t = e.target, p = cur(); if(!p) return;
     var chg = t.dataset.chg;
+    if(t.name === "insType"){ syncIns(t.closest("form")); return; }
     if(chg === "mgmt"){ var f = t.closest("form"); if(f) f.dataset.mgmt = t.value; }
     else if(chg === "iv"){
       var id = t.dataset.id, done = t.checked, it = find(p.interventions, id);
