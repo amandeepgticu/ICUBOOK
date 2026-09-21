@@ -164,7 +164,7 @@
   @media (max-width:760px){.fgrid{grid-template-columns:repeat(4,minmax(0,1fr))}.f.w3{grid-column:span 4}.f.w6{grid-column:span 4}}
   @media (max-width:480px){.fgrid{grid-template-columns:repeat(2,minmax(0,1fr))}.f.w2,.f.w3,.f.w6{grid-column:span 2}}
   label,.lbl{font-size:11.5px;font-weight:600;color:var(--ink-2)}
-  input[type=text],input[type=number],input[type=date],input[type=datetime-local],input:not([type]),select,textarea{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:var(--radius-s);padding:8px 10px;font-size:14px;min-width:0}
+  input[type=text],input[type=password],input[type=search],input[type=number],input[type=date],input[type=datetime-local],input:not([type]),select,textarea{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:var(--radius-s);padding:8px 10px;font-size:14px;min-width:0}
   textarea{resize:vertical;min-height:44px;line-height:1.45}
   .form-end{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap}
   .form-end .grow{flex:1;font-size:12.5px;color:var(--ink-2)}
@@ -276,8 +276,21 @@
   .gate-card .mark{margin:0 auto;width:52px;height:52px}
   .gate-card h1{font-size:20px}
   .gate-card p{margin:0;color:var(--ink-2);font-size:13px;line-height:1.5}
-  #pinInput{text-align:center;font-family:"IBM Plex Mono",monospace;font-size:24px;letter-spacing:.3em;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);width:100%}
+  .gate{overflow-y:auto}
+  .gate-card{text-align:left}
+  .gate-card h1{text-align:center}
+  .gtabs{display:grid;grid-template-columns:1fr 1fr;background:var(--surface-2);border-radius:10px;padding:3px}
+  .gtabs button{border:0;background:none;border-radius:8px;padding:8px;font-weight:600;font-size:13px;color:var(--ink-2)}
+  .gtabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+  .gtabs button[disabled]{opacity:.45;cursor:not-allowed}
+  .gform{display:flex;flex-direction:column;gap:10px}
+  .gbtn{justify-content:center;padding:12px}
+  .gnote{margin:0;font-size:12px;color:var(--ink-3);line-height:1.45}
+  #regNote{color:var(--ink-2);background:var(--surface-2);border-radius:8px;padding:8px 10px}
   .gate-err{color:var(--crit);font-size:13px;font-weight:600;min-height:18px}
+  .team li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line);font-size:13px}
+  .team ul{list-style:none;margin:0;padding:0}
+  .team .acts{display:flex;gap:6px;flex:none}
 
   .toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:13px;font-weight:600;z-index:95;opacity:0;transition:opacity .2s;pointer-events:none;max-width:calc(100% - 32px)}
   .toast.show{opacity:1}
@@ -310,7 +323,7 @@
         <button class="signas" id="sigBtn" type="button">Signing as <b id="sigName">—</b></button>
         <button class="btn" id="refreshBtn" type="button">Refresh</button>
         <button class="btn" id="printBtn" type="button">Print sheet</button>
-        <button class="btn" id="lockBtn" type="button">Lock</button>
+        <button class="btn" id="lockBtn" type="button">Sign out</button>
       </div>
     </div>
     <div class="stats" id="stats"></div>
@@ -331,14 +344,33 @@
 </div>
 
 <div class="gate" id="gate" hidden>
-  <form class="gate-card" id="gateForm" onsubmit="return false">
+  <div class="gate-card">
     <span class="mark" aria-hidden="true"><svg width="34" height="24" viewBox="0 0 26 18"><polyline points="1,10 7,10 9,5 12,15 15,2 18,10 25,10" fill="none" stroke="#3ee07a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg></span>
     <h1 id="gateUnit">Amandeep Hospital ICU</h1>
-    <p>Enter the unit PIN to open the round book. This device remembers it until someone taps Lock.</p>
-    <input id="pinInput" type="password" inputmode="numeric" autocomplete="off" aria-label="Unit PIN">
-    <div class="gate-err" id="gateErr"></div>
-    <button class="btn primary" id="pinGo" type="submit" style="justify-content:center;padding:12px">Open round book</button>
-  </form>
+    <div class="gtabs" role="tablist">
+      <button type="button" role="tab" id="gtLogin" aria-selected="true">Sign in</button>
+      <button type="button" role="tab" id="gtReg" aria-selected="false">Create account</button>
+    </div>
+    <form id="loginForm" class="gform" autocomplete="on">
+      <div class="f"><label for="liUser">Username</label><input id="liUser" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required></div>
+      <div class="f"><label for="liPass">Password</label><input id="liPass" name="password" type="password" autocomplete="current-password" required></div>
+      <div class="gate-err" id="liErr"></div>
+      <button class="btn primary gbtn" type="submit">Sign in</button>
+      <p class="gnote">Forgot your password? Ask the round book admin to reset it.</p>
+    </form>
+    <form id="regForm" class="gform" hidden autocomplete="off">
+      <p class="gnote" id="regNote"></p>
+      <div class="f"><label for="rgName">Your name</label><input id="rgName" name="name" type="text" placeholder="e.g. Dr. Rao, Sr. Anu" required></div>
+      <div class="f"><label for="rgProf">Profession</label><select id="rgProf" name="profession"><option>Consultant anaesthetist</option><option>Consultant (other speciality)</option><option>Resident doctor</option><option>ICU in-charge</option><option>Staff nurse</option><option>Physiotherapist</option><option>Other</option></select></div>
+      <div class="f"><label for="rgUser">Choose a username</label><input id="rgUser" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="3–20 letters or numbers" required></div>
+      <div class="f"><label for="rgPass">Choose a password</label><input id="rgPass" name="password" type="password" autocomplete="new-password" placeholder="At least 6 characters" required></div>
+      <div class="f"><label for="rgPass2">Type the password again</label><input id="rgPass2" name="password2" type="password" autocomplete="new-password" required></div>
+      <div class="f"><label for="rgPin">Unit PIN</label><input id="rgPin" name="pin" type="password" inputmode="numeric" autocomplete="off" placeholder="Ask the ICU in-charge" required></div>
+      <div class="gate-err" id="rgErr"></div>
+      <button class="btn primary gbtn" type="submit">Create account</button>
+      <p class="gnote">Only your name and profession are asked. No phone number, email or ID.</p>
+    </form>
+  </div>
 </div>
 <div id="view"></div>
 <div id="modalRoot"></div>
@@ -451,7 +483,7 @@
   function isVent(p){ var r = latest(p.resp); return !!(r && r.support === "Ventilator"); }
 
   /* ---------- store ---------- */
-  var LKEY = "icurb2_patients", PKEY = "icurb_pin";
+  var LKEY = "icurb2_patients", TKEY = "icurb_token", UKEY = "icurb_user";
   function applyPatch(p, patch){
     Object.keys(patch).forEach(function(k){
       if(k === "$ops"){
@@ -468,18 +500,24 @@
   }
   var HAS_GAS = !!(window.google && google.script && google.script.run);
   var HAS_API = /^https:\/\/script\.google\.com\/.+\/exec/.test(API_URL);
-  function errOf(m){ m = String(m || ""); return {code: m.indexOf("WRONG_PIN") >= 0 ? "pin" : m.indexOf("NOT_FOUND") >= 0 ? "gone" : m.indexOf("TOO_BIG") >= 0 ? "big" : m.indexOf("FILE") >= 0 ? "file" : "net", message:m}; }
+  var ERR_CODES = ["AUTH","WRONG_PIN","BAD_LOGIN","LOCKED","FULL","TAKEN","BAD_USERNAME","WEAK_PASSWORD","NAME_NEEDED","NOT_ADMIN","SELF","NOT_FOUND","FILE","TOO_BIG"];
+  function errOf(m){
+    m = String(m || "");
+    var c = ERR_CODES.filter(function(k){ return m.indexOf(k) >= 0; })[0];
+    var map = {AUTH:"auth", NOT_FOUND:"gone", TOO_BIG:"big", FILE:"file"};
+    return {code: c ? (map[c] || c.toLowerCase()) : "net", message:m};
+  }
   var Store = {
     mode: (HAS_GAS || HAS_API) ? "sheet" : "local",
-    pin: LS.get(PKEY, ""), onList: null, lastSync: null, busy: 0, timer: null,
+    token: LS.get(TKEY, ""), user: LS.get(UKEY, null), onList: null, lastSync: null, busy: 0, timer: null,
     call: function(op, args){
-      var pin = this.pin;
+      var token = this.token;
       if(HAS_GAS){
         return new Promise(function(res, rej){
-          google.script.run.withSuccessHandler(res).withFailureHandler(function(e){ rej(errOf(e && e.message || e)); }).api(pin, op, args || {});
+          google.script.run.withSuccessHandler(res).withFailureHandler(function(e){ rej(errOf(e && e.message || e)); }).api(token, op, args || {});
         });
       }
-      return fetch(API_URL, {method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify({pin:pin, op:op, args:args || {}})})
+      return fetch(API_URL, {method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify({token:token, op:op, args:args || {}})})
         .then(function(r){ return r.json(); }, function(){ throw errOf("NETWORK"); })
         .then(function(j){ if(!j || !j.ok) throw errOf(j && j.error); return j.data; });
     },
@@ -497,14 +535,14 @@
     init: function(onList){
       this.onList = onList;
       if(this.mode === "local"){ onList(LS.get(LKEY, [])); return; }
-      if(!this.pin){ showGate(""); return; }
-      this.refresh(true); this.startPolling();
+      if(!this.token){ showGate(); return; }
+      this.refresh(); this.startPolling();
     },
-    refresh: function(first){
-      if(this.mode === "local" || !this.pin) return Promise.resolve();
+    refresh: function(){
+      if(this.mode === "local" || !this.token) return Promise.resolve();
       var self = this;
       return this.call("list").then(function(r){ $("#gate").hidden = true; self.take(r); }, function(e){
-        if(e.code === "pin"){ self.pin = ""; LS.set(PKEY, ""); showGate(first ? "" : "The unit PIN has changed. Enter the new PIN."); }
+        if(e.code === "auth") signOut("Please sign in again.");
         else $("#sync").textContent = "offline, retrying";
       });
     },
@@ -546,9 +584,17 @@
   /* ---------- signature ---------- */
   function sigName(){ return LS.get("icurb_sig", ""); }
   function sigRole(){ return LS.get("icurb_role", ""); }
-  function sigBy(){ var n = sigName(), r = sigRole(); return n ? n + (r ? " · " + r : "") : ""; }
-  function paintSig(){ $("#sigName").textContent = sigBy() || "tap to set name"; }
+  function sigBy(){
+    if(Store.mode === "sheet"){ var u = Store.user; return u ? u.name + (u.profession ? " · " + u.profession : "") : ""; }
+    var n = sigName(), r = sigRole(); return n ? n + (r ? " · " + r : "") : "";
+  }
+  function paintSig(){
+    $("#sigBtn").firstChild.textContent = Store.mode === "sheet" ? "Signed in as " : "Signing as ";
+    $("#sigName").textContent = sigBy() || (Store.mode === "sheet" ? "—" : "tap to set name");
+    $("#lockBtn").hidden = Store.mode !== "sheet";
+  }
   function askSig(){
+    if(Store.mode === "sheet"){ showGate(); return Promise.resolve(null); }
     return new Promise(function(resolve){
       var roles = ["Consultant anaesthetist","Resident doctor","ICU in-charge","Staff nurse","Other"];
       modal('<h2>Who is updating?</h2><p>Your name goes on every entry you make, so everyone can see who updated what. This device remembers it.</p>' +
@@ -587,7 +633,8 @@
   }
   function writeErr(e){
     var c = e && e.code;
-    if(c === "pin"){ Store.pin = ""; LS.set(PKEY, ""); showGate("The unit PIN has changed. Enter the new PIN, then save again."); return "Not saved: PIN needed"; }
+    if(c === "auth"){ signOut("Please sign in again, then save once more."); return "Not saved: please sign in again"; }
+    if(c === "not_admin") return "Only the admin can do this.";
     if(c === "gone"){ Store.refresh(); return "That patient was removed by someone else."; }
     if(c === "big") return "This patient's record is full. Delete old entries (e.g. old lab reports) and try again.";
     if(c === "file") return "Only photos and PDFs up to 8 MB can be uploaded.";
@@ -1424,18 +1471,109 @@
     }
   });
 
-  /* ---------- gate ---------- */
-  function showGate(msg){ $("#gate").hidden = false; $("#gateErr").textContent = msg || ""; setTimeout(function(){ $("#pinInput").focus(); }, 30); }
-  function submitPin(){
-    var v = $("#pinInput").value.trim(); if(!v) return;
-    $("#pinGo").disabled = true; $("#gateErr").textContent = "";
-    Store.pin = v;
-    Store.call("list").then(function(r){
-      LS.set(PKEY, v); $("#pinInput").value = ""; $("#gate").hidden = true; $("#pinGo").disabled = false;
-      Store.take(r); Store.startPolling();
-    }, function(e){
-      Store.pin = ""; $("#pinGo").disabled = false;
-      $("#gateErr").textContent = e.code === "pin" ? "Wrong PIN. Try again." : "Couldn't connect. Check the internet and try again.";
+  /* ---------- accounts: sign in / create account ---------- */
+  var AUTH_MSG = {
+    bad_login:"Wrong username or password.",
+    locked:"Too many wrong tries. Wait 15 minutes, or ask the admin to reset your password.",
+    wrong_pin:"The unit PIN is wrong. Ask the ICU in-charge for it.",
+    full:"All accounts are in use. Ask the admin to remove an old account first.",
+    taken:"That username is already taken. Choose another.",
+    bad_username:"Username must be 3–20 letters or numbers (dots, dashes and underscores are allowed, no spaces).",
+    weak_password:"The password must be at least 6 characters.",
+    name_needed:"Please enter your name.",
+    net:"Couldn't connect. Check the internet and try again."
+  };
+  function gateTab(which){
+    var reg = which === "reg";
+    $("#gtLogin").setAttribute("aria-selected", !reg); $("#gtReg").setAttribute("aria-selected", reg);
+    $("#loginForm").hidden = reg; $("#regForm").hidden = !reg;
+    setTimeout(function(){ (reg ? $("#rgName") : $("#liUser")).focus(); }, 30);
+  }
+  function showGate(msg){
+    if(Store.mode !== "sheet") return;
+    $("#gate").hidden = false; $("#liErr").textContent = msg || ""; $("#rgErr").textContent = "";
+    gateTab("login");
+    Store.call("status").then(function(s){
+      if(s.unit){ $("#gateUnit").textContent = s.unit; }
+      var left = s.max - s.used;
+      $("#gtReg").disabled = left <= 0;
+      $("#regNote").textContent = s.used === 0 ? "You're the first person here. Your account will be the admin, who can remove accounts and reset forgotten passwords. " + s.max + " accounts can be made in total."
+        : left > 0 ? s.used + " of " + s.max + " accounts made. " + left + " left." : "";
+      if(s.used === 0) gateTab("reg");
+    }, function(){});
+  }
+  function signedIn(r){
+    Store.token = r.token; Store.user = r.user;
+    LS.set(TKEY, r.token); LS.set(UKEY, r.user);
+    $("#loginForm").reset(); $("#regForm").reset();
+    $("#gate").hidden = true; paintSig();
+    toast("Welcome, " + r.user.name);
+    Store.refresh(); Store.startPolling();
+  }
+  function signOut(msg){
+    closeView(true);
+    Store.token = ""; Store.user = null; LS.set(TKEY, ""); LS.set(UKEY, null);
+    patients = []; loaded = false; paintAll(); paintSig();
+    showGate(msg || "");
+  }
+  function authSubmit(form, op, errEl){
+    var d = formData(form);
+    if(op === "register"){
+      if(d.password !== d.password2){ errEl.textContent = "The two passwords don't match."; return; }
+      delete d.password2;
+    }
+    var btn = $("button[type=submit]", form); btn.disabled = true; errEl.textContent = "";
+    Store.call(op, d).then(function(r){ btn.disabled = false; signedIn(r); }, function(e){
+      btn.disabled = false; errEl.textContent = AUTH_MSG[e.code] || AUTH_MSG.net;
+      if(e.code === "full") $("#gtReg").disabled = true;
+    });
+  }
+  function accountMenu(){
+    var u = Store.user; if(!u){ showGate(); return; }
+    modal('<div class="modal-h"><h2>' + esc(u.name) + '</h2><button class="x" type="button" data-close aria-label="Close">×</button></div>' +
+      '<p>' + esc(u.profession || "") + ' · username <b>' + esc(u.username) + '</b>' + (u.isAdmin ? " · admin" : "") + '</p>' +
+      '<div class="r" style="justify-content:flex-start">' + (u.isAdmin ? '<button class="btn" type="button" id="amTeam">Manage accounts</button>' : "") +
+      '<button class="btn" type="button" id="amPass">Change password</button><button class="btn danger" type="button" id="amOut">Sign out</button></div>',
+      function(root, close){
+        if($("#amTeam", root)) $("#amTeam", root).onclick = function(){ close(); teamModal(); };
+        $("#amPass", root).onclick = function(){ close(); changePassword(); };
+        $("#amOut", root).onclick = function(){ close(); signOut(); };
+      });
+  }
+  function changePassword(){
+    editModal("Change password", '<div class="fgrid">' + F("oldPassword", "Current password", "password", 6) + F("newPassword", "New password (at least 6 characters)", "password", 6) + F("newPassword2", "Type the new password again", "password", 6) + '</div>', function(v){
+      if(v.newPassword !== v.newPassword2){ toast("The new passwords don't match"); return Promise.resolve(false); }
+      return Store.call("changePassword", {oldPassword:v.oldPassword, newPassword:v.newPassword}).then(function(){ toast("Password changed"); return true; }, function(e){
+        toast(e.code === "bad_login" ? "Current password is wrong" : (AUTH_MSG[e.code] || writeErr(e))); return false;
+      });
+    });
+  }
+  function teamModal(){
+    var w = modal('<div class="modal-h"><h2>Accounts</h2><button class="x" type="button" data-close aria-label="Close">×</button></div><div class="team" id="teamBox"><p>Loading…</p></div>');
+    var box = $("#teamBox", w);
+    function render(r){
+      box.innerHTML = '<p>' + r.users.length + ' of ' + r.max + ' accounts used. Removing an account frees its place for someone new.</p><ul>' +
+        r.users.map(function(u){
+          var me = Store.user && u.username === Store.user.username;
+          return '<li><span><b>' + esc(u.name) + '</b>' + (u.isAdmin ? " · admin" : "") + '<span class="by">' + esc(u.profession || "") + ' · ' + esc(u.username) + (u.createdAt ? " · joined " + dshort(u.createdAt) : "") + '</span></span>' +
+            (me ? '<span class="by">you</span>' : '<span class="acts"><button class="btn small" type="button" data-reset="' + esc(u.username) + '">Reset password</button><button class="btn small danger" type="button" data-remove="' + esc(u.username) + '" data-name="' + esc(u.name) + '">Remove</button></span>') + '</li>';
+        }).join("") + '</ul>';
+    }
+    function fail(e){ box.innerHTML = '<p>' + esc(writeErr(e)) + '</p>'; }
+    Store.call("users").then(render, fail);
+    box.addEventListener("click", function(e){
+      var rs = e.target.closest("[data-reset]"), rm = e.target.closest("[data-remove]");
+      if(rs){
+        var un = rs.dataset.reset;
+        editModal("Reset password for " + un, '<p>Choose a temporary password and tell it to them. They can change it after signing in.</p>' + F("password", "New password (at least 6 characters)", "text", 6), function(v){
+          return Store.call("resetPassword", {username:un, password:v.password}).then(function(r){ render(r); toast("Password reset"); return true; }, function(err){ toast(AUTH_MSG[err.code] || writeErr(err)); return false; });
+        });
+      } else if(rm){
+        var name = rm.dataset.name, uname = rm.dataset.remove;
+        confirmBox("Remove " + name + "?", "They won't be able to sign in any more, and their place becomes free. Their past entries stay in the records.", "Remove", function(){
+          Store.call("removeUser", {username:uname}).then(function(r){ render(r); toast("Account removed"); }, function(err){ toast(writeErr(err)); });
+        });
+      }
     });
   }
 
@@ -1445,15 +1583,15 @@
   $("#grid").addEventListener("click", function(e){ var c = e.target.closest("[data-open]"); if(c) openPatient(c.dataset.open, "sum"); });
   $("#empty").addEventListener("click", function(e){ if(e.target.closest("[data-admit]")) openAdmit(); });
   $("#admitBtn").onclick = openAdmit;
-  $("#sigBtn").onclick = function(){ askSig(); };
+  $("#sigBtn").onclick = function(){ if(Store.mode === "sheet") accountMenu(); else askSig(); };
   $("#printBtn").onclick = function(){ paintPrint(); window.print(); };
   window.addEventListener("beforeprint", paintPrint);
   $("#refreshBtn").onclick = function(){ $("#sync").textContent = "syncing…"; Store.refresh().then(paintSync); };
-  $("#lockBtn").onclick = function(){
-    if(Store.mode === "local"){ toast("Lock works once the page is connected to Google"); return; }
-    closeView(true); Store.pin = ""; LS.set(PKEY, ""); patients = []; paintAll(); showGate("");
-  };
-  $("#gateForm").addEventListener("submit", submitPin);
+  $("#lockBtn").onclick = function(){ confirmBox("Sign out?", "You'll need your username and password to sign in again on this device.", "Sign out", function(){ signOut(); }); };
+  $("#gtLogin").onclick = function(){ gateTab("login"); };
+  $("#gtReg").onclick = function(){ gateTab("reg"); };
+  $("#loginForm").addEventListener("submit", function(e){ e.preventDefault(); authSubmit(e.target, "login", $("#liErr")); });
+  $("#regForm").addEventListener("submit", function(e){ e.preventDefault(); authSubmit(e.target, "register", $("#rgErr")); });
   document.addEventListener("keydown", function(e){
     if(e.key !== "Escape") return;
     var m = $("#modalRoot").lastElementChild;
