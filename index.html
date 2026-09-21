@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<base target="_top">
+<title>ICU Round Book</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+  :root{
+    --bg:#eef2f4; --surface:#ffffff; --surface-2:#e7edf0; --line:#d3dde2;
+    --ink:#0f1d26; --ink-2:#4b5e69; --ink-3:#83949d;
+    --accent:#0e5e8a; --accent-ink:#ffffff; --accent-soft:#dcebf4; --accent-soft-ink:#0a4a6e;
+    --mon-bg:#0b1419; --mon-line:#1d2c34; --mon-label:#7f9aa6;
+    --hr:#3ee07a; --bp:#ff7a7a; --spo2:#45d3f2; --temp:#f5c542;
+    --abn-bg:#3a1414; --abn-line:#ff5c5c;
+    --crit:#b3261e; --crit-bg:#fde6e4; --ser:#a95c00; --ser-bg:#fff0d9;
+    --stab:#1c7447; --stab-bg:#e1f3e8; --shift:#2c5cb0; --shift-bg:#e4ebfa;
+    --out:#5e6b72; --out-bg:#e8ecee; --warn:#9a5a00; --warn-bg:#fff2dc;
+    --surg:#6a3fb0; --surg-bg:#efe7fb;
+    --radius:12px; --radius-s:8px;
+    --shadow:0 1px 2px rgba(15,29,38,.06),0 2px 8px rgba(15,29,38,.05);
+    --shadow-2:0 18px 48px rgba(15,29,38,.22);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0c1318; --surface:#131d23; --surface-2:#1a262d; --line:#26353d;
+      --ink:#e5edf1; --ink-2:#a3b3bb; --ink-3:#6f818a;
+      --accent:#5cb8e8; --accent-ink:#06202e; --accent-soft:#16303f; --accent-soft-ink:#9ad4f2;
+      --mon-bg:#070d10; --mon-line:#1a272e;
+      --crit:#ff8a80; --crit-bg:#3d1714; --ser:#f3b25c; --ser-bg:#3a2810;
+      --stab:#6fd69c; --stab-bg:#15321f; --shift:#8fb0f0; --shift-bg:#1a2745;
+      --out:#9aa7ae; --out-bg:#20292e; --warn:#f3b25c; --warn-bg:#3a2810;
+      --surg:#c4a6f5; --surg-bg:#2a2040;
+      --shadow:0 1px 2px rgba(0,0,0,.4); --shadow-2:0 18px 48px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0c1318; --surface:#131d23; --surface-2:#1a262d; --line:#26353d;
+    --ink:#e5edf1; --ink-2:#a3b3bb; --ink-3:#6f818a;
+    --accent:#5cb8e8; --accent-ink:#06202e; --accent-soft:#16303f; --accent-soft-ink:#9ad4f2;
+    --mon-bg:#070d10; --mon-line:#1a272e;
+    --crit:#ff8a80; --crit-bg:#3d1714; --ser:#f3b25c; --ser-bg:#3a2810;
+    --stab:#6fd69c; --stab-bg:#15321f; --shift:#8fb0f0; --shift-bg:#1a2745;
+    --out:#9aa7ae; --out-bg:#20292e; --warn:#f3b25c; --warn-bg:#3a2810;
+    --surg:#c4a6f5; --surg-bg:#2a2040;
+    --shadow:0 1px 2px rgba(0,0,0,.4); --shadow-2:0 18px 48px rgba(0,0,0,.6);
+  }
+
+  *{box-sizing:border-box}
+  [hidden]{display:none!important}
+  html{color-scheme:light dark}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:14px;padding-inline:16px;font-variant-numeric:tabular-nums}
+  h1,h2,h3,h4{font-family:"Archivo","IBM Plex Sans",system-ui,sans-serif;margin:0;text-wrap:balance}
+  button,input,select,textarea{font:inherit;color:inherit}
+  button{cursor:pointer}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  /* ---------- top bar ---------- */
+  .top{position:sticky;top:0;z-index:20;background:var(--bg);margin:0 -16px;padding:12px 16px 10px;border-bottom:1px solid var(--line)}
+  .top-row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:10px;min-width:0}
+  .mark{width:38px;height:38px;border-radius:9px;background:var(--mon-bg);display:grid;place-items:center;flex:none}
+  .unit h1{font-size:19px;font-weight:800;letter-spacing:-.01em}
+  .unit .sub{font-size:12px;color:var(--ink-2);margin-top:1px}
+  .top-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .signas{font-size:12px;color:var(--ink-2);background:none;border:1px dashed var(--line);border-radius:999px;padding:6px 11px}
+  .signas b{color:var(--ink);font-weight:600}
+  .btn{border:1px solid var(--line);background:var(--surface);border-radius:var(--radius-s);padding:8px 12px;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;line-height:1.1;white-space:nowrap}
+  .btn:hover{border-color:var(--accent)}
+  .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+  .btn.danger{color:var(--crit);border-color:var(--crit)}
+  .btn.small{padding:6px 9px;font-size:12px}
+  .btn.chart{background:var(--mon-bg);color:var(--hr);border-color:var(--mon-bg);letter-spacing:.04em;font-size:12px}
+  .btn[disabled]{opacity:.5;cursor:not-allowed}
+  .linkbtn{background:none;border:0;color:var(--accent);font-weight:600;font-size:12.5px;padding:0}
+
+  .stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:10px}
+  .stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-width:0}
+  .stat .n{font-family:"Archivo",sans-serif;font-size:22px;font-weight:800;line-height:1}
+  .stat .l{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);font-weight:600;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .stat.crit .n{color:var(--crit)} .stat.warn .n{color:var(--warn)}
+  @media (max-width:600px){.stats{grid-template-columns:repeat(3,minmax(0,1fr))}.stat:nth-child(n+4){display:none}}
+  .banner{margin:12px 0 0;padding:9px 12px;border-radius:var(--radius-s);background:var(--warn-bg);color:var(--warn);font-size:12.5px;font-weight:500}
+
+  main{padding-bottom:100px}
+  .controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:14px 0 12px}
+  #q{flex:1 1 220px;min-width:0;padding:9px 12px;border:1px solid var(--line);border-radius:var(--radius-s);background:var(--surface)}
+  .tabs{display:flex;gap:6px;flex-wrap:wrap}
+  .tab{border:1px solid var(--line);background:var(--surface);color:var(--ink-2);border-radius:999px;padding:7px 12px;font-size:12.5px;font-weight:600}
+  .tab[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+  .tab .c{opacity:.7;margin-left:3px}
+
+  /* ---------- cards ---------- */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:12px}
+  @media (max-width:400px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:12px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:9px;cursor:pointer;text-align:left;width:100%}
+  .card:hover{border-color:var(--accent)}
+  .c-top{display:flex;gap:10px;align-items:flex-start}
+  .bedno{flex:none;min-width:46px;height:46px;padding:0 6px;border-radius:10px;display:grid;place-items:center;font-family:"Archivo",sans-serif;font-weight:800;font-size:18px;background:var(--st-bg);color:var(--st)}
+  .c-id{flex:1;min-width:0}
+  .c-name{font-weight:700;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .c-meta{font-size:12px;color:var(--ink-2);margin-top:2px}
+  .pill{flex:none;display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:999px;font-size:11px;font-weight:700;background:var(--st-bg);color:var(--st);white-space:nowrap}
+  .pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+  .s-critical{--st:var(--crit);--st-bg:var(--crit-bg)}
+  .s-serious{--st:var(--ser);--st-bg:var(--ser-bg)}
+  .s-stable,.s-improving{--st:var(--stab);--st-bg:var(--stab-bg)}
+  .s-shift{--st:var(--shift);--st-bg:var(--shift-bg)}
+  .s-out,.s-lama,.s-expired,.s-none{--st:var(--out);--st-bg:var(--out-bg)}
+  .tags{display:flex;flex-wrap:wrap;gap:5px}
+  .tag{font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;background:var(--surface-2);color:var(--ink-2)}
+  .tag.code{background:var(--ink);color:var(--bg)}
+  .tag.allergy{background:var(--crit-bg);color:var(--crit)}
+  .c-dx{margin:0;padding:0;list-style:none;font-size:13px;line-height:1.4;display:flex;flex-direction:column;gap:2px}
+  .c-dx li{display:flex;gap:6px;justify-content:space-between}
+  .c-dx .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  .c-dx .b{flex:none;font-size:11px;font-weight:700;color:var(--ink-3)}
+  .c-dx .b.pod{color:var(--surg)}
+  .monitor{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));background:var(--mon-bg);border-radius:10px;overflow:hidden}
+  .v{padding:7px 9px;border-right:1px solid var(--mon-line);min-width:0;display:flex;flex-direction:column;gap:1px}
+  .v:last-child{border-right:0}
+  .vl{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--mon-label);font-weight:600}
+  .vn{font-family:"IBM Plex Mono",ui-monospace,monospace;font-weight:600;font-size:19px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .vs{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:10px;color:var(--mon-label);white-space:nowrap}
+  .v-hr .vn{color:var(--hr)} .v-bp .vn{color:var(--bp)} .v-spo2 .vn{color:var(--spo2)} .v-temp .vn{color:var(--temp)}
+  .v.empty .vn{color:#3b4d56}
+  .v.abn{background:var(--abn-bg);box-shadow:inset 0 -2px 0 var(--abn-line)}
+  .v.abn .vl{color:#ffb4b4}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{font-size:11.5px;font-weight:600;padding:4px 9px;border-radius:999px;background:var(--surface-2);color:var(--ink-2);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .chip.vent{background:var(--accent-soft);color:var(--accent-soft-ink)}
+  .chip.alert{background:var(--crit-bg);color:var(--crit)}
+  .chip.warn{background:var(--warn-bg);color:var(--warn)}
+  .c-ho{font-size:12px;color:var(--ink-2);background:var(--surface-2);border-radius:8px;padding:6px 9px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .c-foot{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:11.5px;color:var(--ink-3);flex-wrap:wrap}
+  .c-foot .stale{color:var(--warn);font-weight:600}
+  .empty-state{border:1px dashed var(--line);border-radius:var(--radius);background:var(--surface);padding:40px 20px;text-align:center;color:var(--ink-2)}
+  .empty-state h2{font-size:17px;color:var(--ink);margin-bottom:6px}
+  .empty-state p{margin:0 auto 14px;max-width:44ch;line-height:1.5}
+  .fab{position:fixed;right:18px;bottom:18px;z-index:25;border:0;border-radius:999px;background:var(--accent);color:var(--accent-ink);padding:14px 20px;font-weight:700;font-size:14px;box-shadow:var(--shadow-2)}
+
+  /* ---------- patient view ---------- */
+  .scrim{position:fixed;inset:0;background:rgba(6,14,19,.5);z-index:40}
+  .pv{position:fixed;top:0;right:0;bottom:0;width:min(980px,100%);background:var(--bg);z-index:41;display:flex;flex-direction:column;box-shadow:var(--shadow-2)}
+  .pv-head{background:var(--surface);border-bottom:1px solid var(--line);padding:12px 16px 0;display:flex;flex-direction:column;gap:8px}
+  .pv-title{display:flex;gap:10px;align-items:center}
+  .pv-title .bedno{min-width:42px;height:42px;font-size:16px}
+  .pv-title .who{flex:1;min-width:0}
+  .pv-title h2{font-size:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pv-title .meta{font-size:12px;color:var(--ink-2);margin-top:2px}
+  .x{border:1px solid var(--line);background:var(--surface);border-radius:var(--radius-s);width:38px;height:38px;font-size:18px;flex:none}
+  .ptabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:thin;margin:0 -16px;padding:0 12px}
+  .ptab{flex:none;background:none;border:0;border-bottom:3px solid transparent;padding:9px 10px 8px;font-size:13px;font-weight:600;color:var(--ink-2);display:inline-flex;gap:6px;align-items:center}
+  .ptab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+  .ptab .dot{min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:var(--crit);color:#fff;font-size:10.5px;display:grid;place-items:center}
+  .pv-body{flex:1;overflow-y:auto;padding:14px 16px 40px;display:flex;flex-direction:column;gap:14px}
+  .sec{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px}
+  .sec-h{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+  .sec h3{font-size:14.5px;font-weight:700}
+  .sec > h3{margin-bottom:10px}
+  .hint{font-size:12px;color:var(--ink-3);font-weight:500}
+  .fgrid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+  .f{display:flex;flex-direction:column;gap:4px;min-width:0}
+  .f.w1{grid-column:span 1} .f.w2{grid-column:span 2} .f.w3{grid-column:span 3} .f.w6{grid-column:span 6}
+  @media (max-width:760px){.fgrid{grid-template-columns:repeat(4,minmax(0,1fr))}.f.w3{grid-column:span 4}.f.w6{grid-column:span 4}}
+  @media (max-width:480px){.fgrid{grid-template-columns:repeat(2,minmax(0,1fr))}.f.w2,.f.w3,.f.w6{grid-column:span 2}}
+  label,.lbl{font-size:11.5px;font-weight:600;color:var(--ink-2)}
+  input[type=text],input[type=number],input[type=date],input[type=datetime-local],input:not([type]),select,textarea{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:var(--radius-s);padding:8px 10px;font-size:14px;min-width:0}
+  textarea{resize:vertical;min-height:44px;line-height:1.45}
+  .form-end{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap}
+  .form-end .grow{flex:1;font-size:12.5px;color:var(--ink-2)}
+  .form-end .grow b{color:var(--ink);font-family:"IBM Plex Mono",monospace}
+  .syschips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+  .sys{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:6px 11px;font-size:13px;cursor:pointer;user-select:none}
+  .sys input{accent-color:var(--crit);margin:0}
+  .sys:has(input:checked){background:var(--crit-bg);color:var(--crit);border-color:transparent;font-weight:600}
+  .seg{display:flex;gap:6px;flex-wrap:wrap}
+  .seg label{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:13px;color:var(--ink);cursor:pointer}
+  .seg input{margin:0}
+  .seg label:has(input:checked){background:var(--accent-soft);color:var(--accent-soft-ink);border-color:var(--accent)}
+  form[data-mgmt="conservative"] .surg-only{display:none}
+
+  .todo{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+  .todo:last-child{border-bottom:0}
+  .todo input{margin-top:3px;width:17px;height:17px;accent-color:var(--accent);flex:none}
+  .todo .t{flex:1;min-width:0;line-height:1.4}
+  .todo.done .t > span:first-child{text-decoration:line-through;color:var(--ink-3)}
+  .by{display:block;font-size:11px;color:var(--ink-3)}
+  .del{background:none;border:0;color:var(--ink-3);font-size:17px;padding:0 4px;line-height:1}
+  .addrow{display:flex;gap:8px;margin-top:10px}
+  .addrow input{flex:1}
+  .none{margin:0;color:var(--ink-3);font-size:13px}
+
+  .dx{border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px}
+  .dx + .dx{margin-top:10px}
+  .dx-h{display:flex;gap:10px;align-items:flex-start}
+  .dx-n{flex:none;width:24px;height:24px;border-radius:50%;background:var(--ink);color:var(--bg);display:grid;place-items:center;font-size:12px;font-weight:700}
+  .dx-t{flex:1;font-weight:700;font-size:14.5px;line-height:1.35}
+  .mg{flex:none;font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px}
+  .mg.surgical{background:var(--surg-bg);color:var(--surg)}
+  .mg.conservative{background:var(--stab-bg);color:var(--stab)}
+  .dx-surg{font-size:13px;color:var(--ink-2)}
+  .pod{color:var(--surg);font-family:"IBM Plex Mono",monospace;margin-left:6px}
+  .dx-plan{font-size:13.5px;line-height:1.5;white-space:pre-wrap;background:var(--surface-2);border-radius:8px;padding:8px 10px}
+  .dx-plan .lbl{display:block;margin-bottom:2px}
+  .rowfoot{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;font-size:11.5px;color:var(--ink-3)}
+  .rowfoot .acts{display:flex;gap:6px}
+
+  .item{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line)}
+  .item:last-child{border-bottom:0}
+  .item .main{flex:1;min-width:0;line-height:1.4}
+  .item .main b{font-weight:700}
+  .item .acts{display:flex;gap:6px;flex:none}
+  .kind{flex:none;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:3px 7px;border-radius:6px;background:var(--surface-2);color:var(--ink-2);margin-top:1px}
+  .dayn{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:12.5px;color:var(--accent);white-space:nowrap}
+  .alertbox{background:var(--crit-bg);color:var(--crit);border-radius:var(--radius);padding:12px 14px;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;font-size:13px}
+  .alertbox b{font-weight:700}
+  .okbox{background:var(--stab-bg);color:var(--stab);border-radius:var(--radius);padding:10px 14px;font-size:12.5px;font-weight:600}
+
+  .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+  table.t{border-collapse:collapse;width:100%;font-size:12.5px;white-space:nowrap}
+  table.t th,table.t td{padding:6px 9px;border-bottom:1px solid var(--line);text-align:left}
+  table.t th{background:var(--surface-2);font-weight:700;font-size:11.5px;color:var(--ink-2);position:sticky;top:0}
+  table.t td.num{font-family:"IBM Plex Mono",monospace}
+  table.t td.ab{color:var(--crit);font-weight:700;background:var(--crit-bg)}
+  table.t td.rowh,table.t th.rowh{position:sticky;left:0;background:var(--surface);font-weight:600;z-index:1}
+  table.t th.rowh{background:var(--surface-2);z-index:2}
+  table.t tr:last-child td{border-bottom:0}
+  table.t .by{display:inline;font-size:11px}
+  .trend{width:100%;height:auto;display:block;margin-bottom:10px}
+  .legend{display:flex;gap:14px;font-size:12px;color:var(--ink-2);margin-bottom:6px;flex-wrap:wrap}
+  .legend i{display:inline-block;width:12px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}
+
+  .cult{border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:7px}
+  .cult + .cult{margin-top:10px}
+  .cult-h{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+  .cult-h b{font-size:14px}
+  .st{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px}
+  .st.sent{background:var(--warn-bg);color:var(--warn)}
+  .st.nogrowth{background:var(--stab-bg);color:var(--stab)}
+  .st.growth{background:var(--crit-bg);color:var(--crit)}
+  .st.contam{background:var(--out-bg);color:var(--out)}
+  .org{font-weight:700;font-style:italic}
+  .sr{font-size:13px;line-height:1.45}
+  .sr .s{color:var(--stab);font-weight:700} .sr .r{color:var(--crit);font-weight:700} .sr .i{color:var(--warn);font-weight:700}
+  .files{display:flex;flex-wrap:wrap;gap:6px}
+  .filebtn{border:1px solid var(--line);background:var(--surface-2);border-radius:6px;padding:5px 9px;font-size:12px;font-weight:600}
+  .upl{position:relative;overflow:hidden}
+  .upl input{position:absolute;inset:0;opacity:0;cursor:pointer}
+
+  .ho{padding:10px 0;border-bottom:1px solid var(--line)}
+  .ho:last-child{border-bottom:0}
+  .ho .txt{white-space:pre-wrap;line-height:1.5;font-size:13.5px}
+  .ho .meta{font-size:11.5px;color:var(--ink-3);margin-bottom:3px}
+  .log{list-style:none;margin:0;padding:0}
+  .log li{display:grid;grid-template-columns:90px 1fr;gap:10px;padding:6px 0;border-top:1px solid var(--line);font-size:12.5px;line-height:1.4;color:var(--ink-2)}
+  .log time{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink-3)}
+
+  /* ---------- modal ---------- */
+  .modal-wrap{position:fixed;inset:0;z-index:60;background:rgba(6,14,19,.55);display:grid;place-items:center;padding:16px;overflow-y:auto}
+  .modal{background:var(--surface);border-radius:14px;padding:18px;width:min(440px,100%);box-shadow:var(--shadow-2);display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 32px);overflow-y:auto}
+  .modal.wide{width:min(960px,100%)}
+  .modal-h{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .modal h2{font-size:17px}
+  .modal p{margin:0;color:var(--ink-2);font-size:13px;line-height:1.5}
+  .modal .r{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+  .labpick h4{font-size:13px;margin:6px 0}
+  .labpick .grp{display:flex;flex-wrap:wrap;gap:6px}
+  .labpick label{display:inline-flex;gap:6px;align-items:center;border:1px solid var(--line);border-radius:999px;padding:5px 10px;font-size:12.5px;color:var(--ink);cursor:pointer}
+  .labpick label:has(input:checked){background:var(--accent-soft);border-color:var(--accent);color:var(--accent-soft-ink)}
+  .viewer img{max-width:100%;border-radius:8px;display:block}
+  .viewer iframe{width:100%;height:70vh;border:1px solid var(--line);border-radius:8px}
+
+  .gate{position:fixed;inset:0;z-index:90;background:var(--bg);display:grid;place-items:center;padding:16px}
+  .gate-card{width:min(360px,100%);background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:var(--shadow-2);display:flex;flex-direction:column;gap:14px;text-align:center}
+  .gate-card .mark{margin:0 auto;width:52px;height:52px}
+  .gate-card h1{font-size:20px}
+  .gate-card p{margin:0;color:var(--ink-2);font-size:13px;line-height:1.5}
+  #pinInput{text-align:center;font-family:"IBM Plex Mono",monospace;font-size:24px;letter-spacing:.3em;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);width:100%}
+  .gate-err{color:var(--crit);font-size:13px;font-weight:600;min-height:18px}
+
+  .toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:13px;font-weight:600;z-index:95;opacity:0;transition:opacity .2s;pointer-events:none;max-width:calc(100% - 32px)}
+  .toast.show{opacity:1}
+  .foot-note{font-size:11.5px;color:var(--ink-3);text-align:center;margin:26px auto 0;max-width:70ch;line-height:1.5}
+
+  #printSheet{display:none}
+  @media print{
+    body{background:#fff;color:#000;padding:0}
+    .top,.controls,.grid,.fab,.empty-state,.foot-note,.banner,#view,#modalRoot,.gate{display:none!important}
+    #printSheet{display:block}
+    #printSheet h2{font-size:15px;margin:0 0 8px}
+    #printSheet table{width:100%;border-collapse:collapse;font-size:10px}
+    #printSheet th,#printSheet td{border:1px solid #888;padding:4px 5px;vertical-align:top;text-align:left;white-space:pre-line}
+    #printSheet th{background:#eee}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div id="app">
+  <header class="top">
+    <div class="top-row">
+      <div class="brand">
+        <span class="mark" aria-hidden="true"><svg width="26" height="18" viewBox="0 0 26 18"><polyline points="1,10 7,10 9,5 12,15 15,2 18,10 25,10" fill="none" stroke="#3ee07a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg></span>
+        <div class="unit">
+          <h1 id="unitName">Amandeep Hospital ICU</h1>
+          <div class="sub"><span id="clock">&nbsp;</span> · <span id="sync">connecting…</span></div>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button class="signas" id="sigBtn" type="button">Signing as <b id="sigName">—</b></button>
+        <button class="btn" id="refreshBtn" type="button">Refresh</button>
+        <button class="btn" id="printBtn" type="button">Print sheet</button>
+        <button class="btn" id="lockBtn" type="button">Lock</button>
+      </div>
+    </div>
+    <div class="stats" id="stats"></div>
+    <div class="banner" id="modeBanner" hidden></div>
+  </header>
+
+  <main>
+    <div class="controls">
+      <input id="q" type="search" placeholder="Search bed, name, diagnosis…" aria-label="Search patients">
+      <div class="tabs" id="tabs" role="tablist"></div>
+    </div>
+    <div class="grid" id="grid"></div>
+    <div class="empty-state" id="empty" hidden></div>
+    <p class="foot-note">For the ICU team's rounds only. It doesn't replace the hospital case sheet. Keep the PIN within the ICU team.</p>
+    <div id="printSheet"></div>
+  </main>
+  <button class="fab" id="admitBtn" type="button">+ Admit patient</button>
+</div>
+
+<div class="gate" id="gate" hidden>
+  <form class="gate-card" id="gateForm" onsubmit="return false">
+    <span class="mark" aria-hidden="true"><svg width="34" height="24" viewBox="0 0 26 18"><polyline points="1,10 7,10 9,5 12,15 15,2 18,10 25,10" fill="none" stroke="#3ee07a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg></span>
+    <h1 id="gateUnit">Amandeep Hospital ICU</h1>
+    <p>Enter the unit PIN to open the round book. This device remembers it until someone taps Lock.</p>
+    <input id="pinInput" type="password" inputmode="numeric" autocomplete="off" aria-label="Unit PIN">
+    <div class="gate-err" id="gateErr"></div>
+    <button class="btn primary" id="pinGo" type="submit" style="justify-content:center;padding:12px">Open round book</button>
+  </form>
+</div>
+<div id="view"></div>
+<div id="modalRoot"></div>
+<div class="toast" id="toast" role="status"></div>
+
+<datalist id="dl_ins"><option>Ayushman Bharat / PMJAY</option><option>State government scheme</option><option>ECHS / CGHS</option><option>ESIC</option><option>Private insurance / TPA</option><option>Corporate</option><option>Cash / self-pay</option></datalist>
+<datalist id="dl_mode"><option>VC-AC</option><option>PC-AC</option><option>PRVC</option><option>SIMV-VC</option><option>SIMV-PC</option><option>PSV / CPAP</option><option>APRV</option><option>BiPAP</option><option>CPAP</option><option>HFNC</option></datalist>
+<datalist id="dl_abx"><option>Ceftriaxone</option><option>Cefoperazone-sulbactam</option><option>Piperacillin-tazobactam</option><option>Meropenem</option><option>Imipenem-cilastatin</option><option>Ertapenem</option><option>Vancomycin</option><option>Teicoplanin</option><option>Linezolid</option><option>Colistin</option><option>Polymyxin B</option><option>Amikacin</option><option>Gentamicin</option><option>Metronidazole</option><option>Clindamycin</option><option>Levofloxacin</option><option>Ciprofloxacin</option><option>Azithromycin</option><option>Doxycycline</option><option>Minocycline</option><option>Tigecycline</option><option>Ceftazidime-avibactam</option><option>Cefepime</option><option>Amoxicillin-clavulanate</option><option>Cefuroxime</option><option>Fluconazole</option><option>Voriconazole</option><option>Caspofungin</option><option>Micafungin</option><option>Amphotericin B</option></datalist>
+<datalist id="dl_freq"><option>OD</option><option>BD</option><option>TDS</option><option>QID</option><option>q6h</option><option>q8h</option><option>q12h</option><option>Stat</option><option>Continuous infusion</option><option>Extended infusion</option></datalist>
+<datalist id="dl_org"><option>Escherichia coli</option><option>Klebsiella pneumoniae</option><option>Pseudomonas aeruginosa</option><option>Acinetobacter baumannii</option><option>Staphylococcus aureus (MSSA)</option><option>Staphylococcus aureus (MRSA)</option><option>Coagulase-negative Staphylococcus</option><option>Enterococcus faecalis</option><option>Enterococcus faecium</option><option>Proteus mirabilis</option><option>Enterobacter spp.</option><option>Citrobacter spp.</option><option>Serratia marcescens</option><option>Stenotrophomonas maltophilia</option><option>Burkholderia cepacia</option><option>Streptococcus spp.</option><option>Candida albicans</option><option>Candida non-albicans</option><option>Candida auris</option></datalist>
+
+<script>
+(function(){
+  "use strict";
+
+  /* =========================================================
+     When this page is hosted outside Google (e.g. GitHub Pages),
+     paste the Apps Script web app link (ending in /exec) here:  */
+  var API_URL = "";
+  /* ========================================================= */
+
+  var $ = function(s, r){ return (r || document).querySelector(s); };
+  var $$ = function(s, r){ return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+  function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+  var LS = {
+    get: function(k, d){ try{ var v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); }catch(e){ return d; } },
+    set: function(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+  };
+  function uid(){ return Date.now().toString(36).slice(-4) + Math.random().toString(36).slice(2, 8); }
+  function num(v){ var n = parseFloat(v); return isNaN(n) ? null : n; }
+  function pad(n){ return String(n).padStart(2, "0"); }
+  function ymd(d){ return d.getFullYear() + "-" + pad(d.getMonth()+1) + "-" + pad(d.getDate()); }
+  function today(){ return ymd(new Date()); }
+  function nowISO(){ return new Date().toISOString(); }
+  function localDT(d){ d = d || new Date(); return ymd(d) + "T" + pad(d.getHours()) + ":" + pad(d.getMinutes()); }
+  function dtISO(v){ var d = v ? new Date(v) : new Date(); return isNaN(d.getTime()) ? nowISO() : d.toISOString(); }
+  function daysFrom(s){ if(!s) return null; var a = new Date(String(s).slice(0,10) + "T00:00:00"); if(isNaN(a.getTime())) return null; return Math.round((new Date(today() + "T00:00:00") - a)/864e5); }
+  function dayN(s){ var d = daysFrom(s); return d == null ? null : d + 1; }
+  function hm(iso){ var d = new Date(iso); return pad(d.getHours()) + ":" + pad(d.getMinutes()); }
+  function dshort(s){ if(!s) return ""; var d = new Date(String(s).length <= 10 ? s + "T00:00:00" : s); return isNaN(d.getTime()) ? "" : d.toLocaleDateString("en-IN", {day:"2-digit", month:"short"}); }
+  function stamp(iso){ if(!iso) return ""; var d = new Date(iso); return (ymd(d) === today() ? "" : dshort(iso) + " ") + hm(iso); }
+  function ago(iso){
+    if(!iso) return "never";
+    var m = Math.round((Date.now() - new Date(iso).getTime())/60000);
+    if(m < 1) return "just now"; if(m < 60) return m + " min ago";
+    var h = Math.floor(m/60); if(h < 24) return h + " h ago";
+    return Math.floor(h/24) + " d ago";
+  }
+  function hoursSince(iso){ return iso ? (Date.now() - new Date(iso).getTime())/3600000 : Infinity; }
+  // Newest first; entries with the same time keep "last added first".
+  function byTime(list){
+    return (list || []).map(function(x, i){ return [x, i]; })
+      .sort(function(a, b){ return String(b[0].at).localeCompare(String(a[0].at)) || b[1] - a[1]; })
+      .map(function(x){ return x[0]; });
+  }
+  function latest(list){ return byTime(list)[0] || null; }
+
+  /* ---------- clinical lists ---------- */
+  var CONDITIONS = [["critical","Critical"],["serious","Serious"],["stable","Stable"],["improving","Improving"],["shift","Ready to shift"],["out","Shifted / discharged"],["lama","LAMA / DAMA"],["expired","Expired"]];
+  var COND = {}; CONDITIONS.forEach(function(c){ COND[c[0]] = c[1]; });
+  var ARCHIVED = ["out","lama","expired"];
+  var CODES = ["10C","10I","10B"];
+  var SYSTEMS = ["Head injury","Chest injury","Abdominal injury","Facial injury","Skeletal injury","Spine injury"];
+  var SUPPORT = ["Room air","Nasal prongs","Face mask / NRBM","HFNC","NIV / BiPAP","Ventilator","T-piece / trach mask"];
+  var LINE_KINDS = ["Infusion","Central line","Peripheral IV","Arterial line","ET tube","Tracheostomy","Ryles tube","Urinary catheter","ICD (chest drain)","Surgical drain","Other"];
+  var SAMPLES = ["Blood (peripheral)","Blood (central line)","Urine","Pus","Wound swab","Tissue","ET tube aspirate","Tracheal aspirate","Sputum","BAL","CSF","Pleural fluid","Ascitic / peritoneal fluid","Drain fluid","Catheter tip","CVC tip","Bone","Stool","Throat swab","Other"];
+  var CULT_STATUS = [["sent","Sent · awaiting"],["nogrowth","No growth"],["growth","Growth"],["contam","Contaminant"]];
+  var VITALS = [["hr","HR","/min",50,120],["sbp","SBP","mmHg",90,180],["dbp","DBP","mmHg",null,null],["spo2","SpO₂","%",92,null],["temp","Temp","°C/°F",null,null],["rr","RR","/min",10,28],["gcs","GCS","",null,null],["grbs","GRBS","mg/dL",70,180],["cvp","CVP","cmH₂O",null,null],["uo","Urine","ml/h",null,null]];
+  var RESP_F = [["fio2","FiO₂","%"],["peep","PEEP","cmH₂O"],["vt","Vt","ml"],["setRr","Set RR","/min"],["ps","PS / Pinsp","cmH₂O"],["ppeak","Ppeak","cmH₂O"],["flow","O₂ flow","L/min"]];
+  var ABG_F = [["ph","pH","",7.35,7.45],["pco2","PaCO₂","mmHg",35,45],["po2","PaO₂","mmHg",80,100],["hco3","HCO₃","mmol/L",22,26],["be","BE","mmol/L",-2,2],["lac","Lactate","mmol/L",null,2],["sao2","SaO₂","%",94,null],["na","Na","mmol/L",135,145],["k","K","mmol/L",3.5,5.1],["cl","Cl","mmol/L",98,107],["ica","iCa","mmol/L",1.12,1.32],["glu","Glucose","mg/dL",70,180],["hb","Hb","g/dL",8,null],["fio2","FiO₂","%",null,null]];
+  var LAB_GROUPS = [
+    ["Haematology", [["Hb","g/dL",12,17],["TLC","/µL",4000,11000],["Neutrophils","%",40,75],["Lymphocytes","%",20,45],["Platelets","lakh/µL",1.5,4.5],["PCV","%",36,50]]],
+    ["Coagulation", [["PT","s",11,14],["INR","",0.8,1.2],["APTT","s",25,38],["Fibrinogen","mg/dL",200,400],["D-dimer","ng/mL",null,500]]],
+    ["Renal & electrolytes", [["Urea","mg/dL",15,45],["Creatinine","mg/dL",0.6,1.3],["Sodium","mmol/L",135,145],["Potassium","mmol/L",3.5,5.1],["Chloride","mmol/L",98,107],["Calcium","mg/dL",8.5,10.5],["Ionised Ca","mmol/L",1.12,1.32],["Magnesium","mg/dL",1.7,2.4],["Phosphorus","mg/dL",2.5,4.5],["Uric acid","mg/dL",3.5,7.2]]],
+    ["Liver", [["T. Bilirubin","mg/dL",0.2,1.2],["D. Bilirubin","mg/dL",null,0.3],["SGOT (AST)","U/L",null,40],["SGPT (ALT)","U/L",null,41],["ALP","U/L",40,130],["GGT","U/L",null,60],["T. Protein","g/dL",6,8.3],["Albumin","g/dL",3.5,5.2]]],
+    ["Sugar", [["RBS","mg/dL",70,180],["HbA1c","%",null,5.7]]],
+    ["Sepsis & inflammation", [["CRP","mg/L",null,6],["Procalcitonin","ng/mL",null,0.5],["S. Lactate","mmol/L",null,2],["ESR","mm/h",null,20],["Ferritin","ng/mL",20,300]]],
+    ["Cardiac & muscle", [["Trop I","ng/mL",null,0.04],["CK-MB","U/L",null,25],["CPK","U/L",20,200],["NT-proBNP","pg/mL",null,125],["Myoglobin","ng/mL",null,70]]],
+    ["Pancreas", [["S. Amylase","U/L",28,100],["S. Lipase","U/L",13,60]]],
+    ["Others", [["TSH","µIU/mL",0.4,4.5],["S. Osmolality","mOsm/kg",275,295],["Urine R/M","",null,null],["Blood group","",null,null],["HIV / HBsAg / HCV","",null,null]]]
+  ];
+  var LAB = {}; LAB_GROUPS.forEach(function(g){ g[1].forEach(function(t){ LAB[t[0]] = {unit:t[1], lo:t[2], hi:t[3]}; }); });
+  var LAB_ORDER = []; LAB_GROUPS.forEach(function(g){ g[1].forEach(function(t){ LAB_ORDER.push(t[0]); }); });
+  var DEFAULT_LABS = ["Hb","TLC","Platelets","Urea","Creatinine","Sodium","Potassium","PT","INR","T. Bilirubin","SGOT (AST)","SGPT (ALT)","Albumin","CRP"];
+
+  function out(v, lo, hi){ var n = num(v); if(n == null) return false; return (lo != null && n < lo) || (hi != null && n > hi); }
+  function mapOf(v){ var s = num(v && v.sbp), d = num(v && v.dbp); return (s && d) ? Math.round((s + 2*d)/3) : null; }
+  function tempC(t){ t = num(t); if(t == null) return null; return t > 45 ? (t - 32)*5/9 : t; }
+  function vAbn(k, v){
+    if(!v) return false;
+    if(k === "bp"){ var m = mapOf(v); return (m != null && m < 65) || out(v.sbp, 90, 180); }
+    if(k === "temp"){ var c = tempC(v.temp); return c != null && (c >= 38.3 || c < 35); }
+    var f = VITALS.filter(function(x){ return x[0] === k; })[0];
+    return f ? out(v[k], f[3], f[4]) : false;
+  }
+  function pfOf(po2, fio2){ var a = num(po2), f = num(fio2); return (a && f) ? Math.round(a/(f > 1 ? f/100 : f)) : null; }
+  function archived(p){ return ARCHIVED.indexOf(p.condition) >= 0; }
+  function dxBadge(d){
+    if(d.mgmt === "surgical"){
+      var n = daysFrom(d.surgeryDate);
+      if(n == null) return "Surgical";
+      if(n < 0) return "Surgery in " + (-n) + " d";
+      return "POD " + n;
+    }
+    return d.mgmt === "conservative" ? "Conservative" : "";
+  }
+  function abxUnseen(p){ return !!(p.abxChangedAt && (!p.abxSeenAt || p.abxSeenAt < p.abxChangedAt)); }
+  function pendingIv(p){ return (p.interventions || []).filter(function(i){ return !i.done; }).length; }
+  function isVent(p){ var r = latest(p.resp); return !!(r && r.support === "Ventilator"); }
+
+  /* ---------- store ---------- */
+  var LKEY = "icurb2_patients", PKEY = "icurb_pin";
+  function applyPatch(p, patch){
+    Object.keys(patch).forEach(function(k){
+      if(k === "$ops"){
+        (patch.$ops || []).forEach(function(o){
+          var a = Array.isArray(p[o.list]) ? p[o.list].slice() : [];
+          if(o.op === "push"){ a.push(o.item); if(o.cap && a.length > o.cap) a = a.slice(a.length - o.cap); }
+          else if(o.op === "upd") a = a.map(function(x){ return x.id === o.id ? Object.assign({}, x, o.fields) : x; });
+          else if(o.op === "del") a = a.filter(function(x){ return x.id !== o.id; });
+          p[o.list] = a;
+        });
+      } else if(k !== "id" && k.charAt(0) !== "_") p[k] = patch[k];
+    });
+    return p;
+  }
+  var HAS_GAS = !!(window.google && google.script && google.script.run);
+  var HAS_API = /^https:\/\/script\.google\.com\/.+\/exec/.test(API_URL);
+  function errOf(m){ m = String(m || ""); return {code: m.indexOf("WRONG_PIN") >= 0 ? "pin" : m.indexOf("NOT_FOUND") >= 0 ? "gone" : m.indexOf("TOO_BIG") >= 0 ? "big" : m.indexOf("FILE") >= 0 ? "file" : "net", message:m}; }
+  var Store = {
+    mode: (HAS_GAS || HAS_API) ? "sheet" : "local",
+    pin: LS.get(PKEY, ""), onList: null, lastSync: null, busy: 0, timer: null,
+    call: function(op, args){
+      var pin = this.pin;
+      if(HAS_GAS){
+        return new Promise(function(res, rej){
+          google.script.run.withSuccessHandler(res).withFailureHandler(function(e){ rej(errOf(e && e.message || e)); }).api(pin, op, args || {});
+        });
+      }
+      return fetch(API_URL, {method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify({pin:pin, op:op, args:args || {}})})
+        .then(function(r){ return r.json(); }, function(){ throw errOf("NETWORK"); })
+        .then(function(j){ if(!j || !j.ok) throw errOf(j && j.error); return j.data; });
+    },
+    take: function(r){
+      this.lastSync = Date.now(); paintSync();
+      if(r.unit){ $("#unitName").textContent = r.unit; $("#gateUnit").textContent = r.unit; document.title = r.unit + " · Round Book"; unitName = r.unit; }
+      this.onList(r.patients || []);
+      return r;
+    },
+    startPolling: function(){
+      var self = this; if(this.timer) return;
+      this.timer = setInterval(function(){ if(!document.hidden && !self.busy) self.refresh(); }, 20000);
+      document.addEventListener("visibilitychange", function(){ if(!document.hidden) self.refresh(); });
+    },
+    init: function(onList){
+      this.onList = onList;
+      if(this.mode === "local"){ onList(LS.get(LKEY, [])); return; }
+      if(!this.pin){ showGate(""); return; }
+      this.refresh(true); this.startPolling();
+    },
+    refresh: function(first){
+      if(this.mode === "local" || !this.pin) return Promise.resolve();
+      var self = this;
+      return this.call("list").then(function(r){ $("#gate").hidden = true; self.take(r); }, function(e){
+        if(e.code === "pin"){ self.pin = ""; LS.set(PKEY, ""); showGate(first ? "" : "The unit PIN has changed. Enter the new PIN."); }
+        else $("#sync").textContent = "offline, retrying";
+      });
+    },
+    write: async function(op, args){
+      this.busy++;
+      try{ return this.take(await this.call(op, args)); }
+      finally{ this.busy--; }
+    },
+    localList: function(){ return LS.get(LKEY, []); },
+    localSave: function(list){ LS.set(LKEY, list); this.onList(list); },
+    add: async function(data){
+      if(this.mode === "local"){ var list = this.localList(); var id = "p_" + uid(); list.push(Object.assign({id:id}, data)); this.localSave(list); return id; }
+      return (await this.write("add", {data:data})).id;
+    },
+    update: async function(id, patch){
+      if(this.mode === "local"){
+        var list = this.localList(); var i = list.findIndex(function(p){ return p.id === id; });
+        if(i < 0) throw errOf("NOT_FOUND");
+        applyPatch(list[i], patch); this.localSave(list); return;
+      }
+      await this.write("update", {id:id, patch:patch});
+    },
+    remove: async function(id){
+      if(this.mode === "local"){ this.localSave(this.localList().filter(function(p){ return p.id !== id; })); return; }
+      await this.write("remove", {id:id});
+    },
+    upload: async function(args){
+      if(this.mode === "local") throw {code:"local"};
+      await this.write("upload", args);
+    },
+    file: function(fileId){ return this.call("file", {fileId:fileId}); }
+  };
+
+  /* ---------- state ---------- */
+  var patients = [], loaded = false, unitName = "ICU";
+  var filter = "active", query = "";
+  var view = {id:null, tab:"sum", dirty:{}};
+
+  /* ---------- signature ---------- */
+  function sigName(){ return LS.get("icurb_sig", ""); }
+  function sigRole(){ return LS.get("icurb_role", ""); }
+  function sigBy(){ var n = sigName(), r = sigRole(); return n ? n + (r ? " · " + r : "") : ""; }
+  function paintSig(){ $("#sigName").textContent = sigBy() || "tap to set name"; }
+  function askSig(){
+    return new Promise(function(resolve){
+      var roles = ["Consultant anaesthetist","Resident doctor","ICU in-charge","Staff nurse","Other"];
+      modal('<h2>Who is updating?</h2><p>Your name goes on every entry you make, so everyone can see who updated what. This device remembers it.</p>' +
+        '<div class="f"><label for="sigInput">Name</label><input type="text" id="sigInput" placeholder="e.g. Dr. Rao, Sr. Anu" value="' + esc(sigName()) + '"></div>' +
+        '<div class="f"><label for="roleInput">Role</label><select id="roleInput">' + roles.map(function(r){ return '<option' + (r === sigRole() ? " selected" : "") + '>' + r + '</option>'; }).join("") + '</select></div>' +
+        '<div class="r"><button class="btn" data-close type="button">Cancel</button><button class="btn primary" id="sigSave" type="button">Save</button></div>',
+        function(root, close){
+          var inp = $("#sigInput", root); inp.focus();
+          function done(){ var v = inp.value.trim(); if(!v){ inp.focus(); return; } LS.set("icurb_sig", v); LS.set("icurb_role", $("#roleInput", root).value); paintSig(); close(); resolve(sigBy()); }
+          $("#sigSave", root).onclick = done;
+          inp.addEventListener("keydown", function(e){ if(e.key === "Enter") done(); });
+        }, function(){ resolve(null); });
+    });
+  }
+  async function needSig(){ return sigBy() || await askSig(); }
+
+  /* ---------- UI helpers ---------- */
+  function toast(msg){ var t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(t._t); t._t = setTimeout(function(){ t.classList.remove("show"); }, 2400); }
+  function showBanner(msg){ var b = $("#modeBanner"); b.textContent = msg; b.hidden = !msg; }
+  function modal(html, wire, onCancel, wide){
+    var wrap = document.createElement("div"); wrap.className = "modal-wrap";
+    wrap.innerHTML = '<div class="modal' + (wide ? " wide" : "") + '" role="dialog" aria-modal="true">' + html + '</div>';
+    $("#modalRoot").appendChild(wrap);
+    var closed = false;
+    function close(){ if(closed) return; closed = true; wrap.remove(); }
+    function cancel(){ close(); if(onCancel) onCancel(); }
+    wrap._cancel = cancel;
+    wrap.addEventListener("mousedown", function(e){ if(e.target === wrap) cancel(); });
+    wrap.addEventListener("click", function(e){ if(e.target.closest("[data-close]")) cancel(); });
+    if(wire) wire(wrap, close);
+    return wrap;
+  }
+  function confirmBox(title, msg, yes, onYes){
+    modal('<h2>' + esc(title) + '</h2><p>' + esc(msg) + '</p><div class="r"><button class="btn" data-close type="button">Cancel</button><button class="btn danger" id="yesBtn" type="button">' + esc(yes) + '</button></div>',
+      function(root, close){ $("#yesBtn", root).onclick = function(){ close(); onYes(); }; });
+  }
+  function writeErr(e){
+    var c = e && e.code;
+    if(c === "pin"){ Store.pin = ""; LS.set(PKEY, ""); showGate("The unit PIN has changed. Enter the new PIN, then save again."); return "Not saved: PIN needed"; }
+    if(c === "gone"){ Store.refresh(); return "That patient was removed by someone else."; }
+    if(c === "big") return "This patient's record is full. Delete old entries (e.g. old lab reports) and try again.";
+    if(c === "file") return "Only photos and PDFs up to 8 MB can be uploaded.";
+    if(c === "local") return "Uploads work once the page is connected to Google.";
+    return "Couldn't save. Check the internet and try again.";
+  }
+  var fid = 0;
+  function F(name, label, type, w, o){
+    o = o || {}; var id = "i" + (++fid);
+    var v = o.value == null ? "" : o.value, ctl;
+    name = esc(name);
+    var extra = (o.req ? " required" : "") + (o.list ? ' list="' + o.list + '"' : "") + (o.ph ? ' placeholder="' + esc(o.ph) + '"' : "");
+    if(type === "select"){
+      ctl = '<select id="' + id + '" name="' + name + '"' + extra + '>' + o.opts.map(function(x){ var val = Array.isArray(x) ? x[0] : x, lab = Array.isArray(x) ? x[1] : x; return '<option value="' + esc(val) + '"' + (String(val) === String(v) ? " selected" : "") + '>' + esc(lab) + '</option>'; }).join("") + '</select>';
+    } else if(type === "textarea"){
+      ctl = '<textarea id="' + id + '" name="' + name + '" rows="' + (o.rows || 2) + '"' + extra + '>' + esc(v) + '</textarea>';
+    } else {
+      ctl = '<input id="' + id + '" name="' + name + '" type="' + type + '" value="' + esc(v) + '"' + (type === "number" ? ' step="any" inputmode="decimal"' : "") + extra + '>';
+    }
+    return '<div class="f w' + w + (o.cls ? " " + o.cls : "") + '"><label for="' + id + '">' + label + '</label>' + ctl + '</div>';
+  }
+  function formData(form){
+    var d = {};
+    $$("[name]", form).forEach(function(el){
+      if(el.type === "checkbox"){ if(!d[el.name]) d[el.name] = []; if(el.checked) d[el.name].push(el.value); }
+      else if(el.type === "radio"){ if(el.checked) d[el.name] = el.value; }
+      else d[el.name] = el.value.trim();
+    });
+    return d;
+  }
+  function fillForm(form, obj){
+    $$("[name]", form).forEach(function(el){
+      var v = obj[el.name];
+      if(el.type === "checkbox") el.checked = Array.isArray(v) && v.indexOf(el.value) >= 0;
+      else if(el.type === "radio") el.checked = String(v) === el.value;
+      else el.value = v == null ? "" : v;
+    });
+  }
+  function OP(op, list, a, b){ return op === "push" ? {op:"push", list:list, item:a, cap:b} : op === "upd" ? {op:"upd", list:list, id:a, fields:b} : {op:"del", list:list, id:a}; }
+
+  /* commit(build): build(by, now) returns {fields, ops, log} */
+  async function commit(build, okMsg){
+    var p = cur(); if(!p) return false;
+    var by = await needSig(); if(!by) return false;
+    var now = nowISO();
+    var r = build(by, now, p); if(!r) return false;
+    var ops = (r.ops || []).slice();
+    if(r.log) ops.push(OP("push", "log", {id:uid(), at:now, by:by, text:r.log}, 150));
+    var patch = Object.assign({}, r.fields || {}, {updatedAt:now, updatedByName:by, $ops:ops});
+    try{ await Store.update(p.id, patch); if(okMsg) toast(okMsg); return true; }
+    catch(e){ toast(writeErr(e)); return false; }
+  }
+
+  /* ---------- top: clock, stats, filters ---------- */
+  function paintClock(){ $("#clock").textContent = new Date().toLocaleDateString("en-IN", {weekday:"short", day:"2-digit", month:"short", year:"numeric"}) + " · " + hm(nowISO()); }
+  function paintSync(){
+    var el = $("#sync"); if(!el) return;
+    if(Store.mode === "local"){ el.textContent = "preview"; return; }
+    if(!Store.lastSync){ el.textContent = "connecting…"; return; }
+    var s = Math.round((Date.now() - Store.lastSync)/1000);
+    el.textContent = s < 10 ? "synced just now" : s < 60 ? "synced " + s + " s ago" : "synced " + Math.round(s/60) + " min ago";
+  }
+  function active(){ return patients.filter(function(p){ return !archived(p); }); }
+  function paintStats(){
+    var a = active();
+    var t = [
+      {n:a.length, l:"Beds occupied"},
+      {n:a.filter(function(p){ return p.condition === "critical"; }).length, l:"Critical", c:"crit"},
+      {n:a.filter(isVent).length, l:"Ventilated"},
+      {n:a.reduce(function(s, p){ return s + pendingIv(p); }, 0), l:"Interventions pending", c:"warn"},
+      {n:a.filter(abxUnseen).length, l:"Antibiotic changes unseen", c:"crit"}
+    ];
+    $("#stats").innerHTML = t.map(function(s){ return '<div class="stat ' + (s.c || "") + '"><div class="n">' + s.n + '</div><div class="l">' + s.l + '</div></div>'; }).join("");
+  }
+  var FILTERS = [
+    ["active","All active", function(p){ return !archived(p); }],
+    ["critical","Critical", function(p){ return p.condition === "critical"; }],
+    ["vent","Ventilated", function(p){ return !archived(p) && isVent(p); }],
+    ["surg","Surgical", function(p){ return !archived(p) && (p.dx || []).some(function(d){ return d.mgmt === "surgical"; }); }],
+    ["iv","Interventions pending", function(p){ return !archived(p) && pendingIv(p) > 0; }],
+    ["abx","Antibiotic change unseen", function(p){ return !archived(p) && abxUnseen(p); }],
+    ["arch","Shifted / discharged", archived]
+  ];
+  function paintFilters(){
+    $("#tabs").innerHTML = FILTERS.map(function(t){
+      return '<button class="tab" role="tab" type="button" data-f="' + t[0] + '" aria-selected="' + (filter === t[0]) + '">' + t[1] + '<span class="c">' + patients.filter(t[2]).length + '</span></button>';
+    }).join("");
+  }
+
+  /* ---------- cards ---------- */
+  function vit(label, val, cls, sub, bad){
+    var has = val !== "" && val != null;
+    return '<div class="v v-' + cls + (has ? "" : " empty") + (bad ? " abn" : "") + '"><span class="vl">' + label + '</span><span class="vn">' + (has ? esc(val) : "--") + '</span><span class="vs">' + (sub || "&nbsp;") + '</span></div>';
+  }
+  function monitor(v){
+    var bp = v && (v.sbp || v.dbp) ? (v.sbp || "?") + "/" + (v.dbp || "?") : "", m = mapOf(v);
+    return '<div class="monitor">' +
+      vit("HR", v && v.hr, "hr", "", vAbn("hr", v)) +
+      vit("BP", bp, "bp", m ? "MAP " + m : "", vAbn("bp", v)) +
+      vit("SpO₂", v && v.spo2, "spo2", v && v.rr ? "RR " + esc(v.rr) : "", vAbn("spo2", v)) +
+      vit("Temp", v && v.temp, "temp", v ? stamp(v.at) : "no vitals yet", vAbn("temp", v)) + '</div>';
+  }
+  function respText(r){
+    if(!r) return "";
+    if(r.support === "Ventilator") return ["Vent", r.mode, r.fio2 ? "FiO₂ " + r.fio2 + "%" : "", r.peep ? "PEEP " + r.peep : ""].filter(Boolean).join(" · ");
+    return [r.support, r.flow ? r.flow + " L/min" : "", r.fio2 && r.support !== "Room air" ? "FiO₂ " + r.fio2 + "%" : ""].filter(Boolean).join(" · ");
+  }
+  function condKey(p){ return COND[p.condition] ? p.condition : "none"; }
+  function card(p){
+    var ck = condKey(p), v = latest(p.vitals), r = latest(p.resp), d = dayN(p.admitDate);
+    var meta = [p.age ? p.age + "y" : "", p.sex || "", p.weight ? p.weight + " kg" : "", d ? "ICU day " + d : ""].filter(Boolean).join(" · ");
+    var tags = [];
+    if(p.code) tags.push('<span class="tag code">' + esc(p.code) + '</span>');
+    if(p.allergy && !/^(nkda|nil|none|no)$/i.test(p.allergy.trim())) tags.push('<span class="tag allergy">Allergy: ' + esc(p.allergy) + '</span>');
+    if(p.insurance) tags.push('<span class="tag">' + esc(p.insurance) + '</span>');
+    (p.systems || []).forEach(function(s){ tags.push('<span class="tag">' + esc(s) + '</span>'); });
+    var dx = p.dx || [];
+    var dxh = dx.length ? '<ul class="c-dx">' + dx.slice(0, 3).map(function(x){ var b = dxBadge(x); return '<li><span class="t">' + esc(x.text) + '</span><span class="b' + (/POD|Surgery in/.test(b) ? " pod" : "") + '">' + esc(b) + '</span></li>'; }).join("") + (dx.length > 3 ? '<li><span class="b">+' + (dx.length - 3) + ' more</span></li>' : "") + '</ul>' : "";
+    var chips = [];
+    if(r) chips.push('<span class="chip ' + (/Ventilator|NIV|HFNC/.test(r.support) ? "vent" : "") + '">' + esc(respText(r)) + '</span>');
+    if(abxUnseen(p)) chips.push('<span class="chip alert">Antibiotic changed · not seen</span>');
+    var iv = pendingIv(p); if(iv) chips.push('<span class="chip warn">' + iv + ' intervention' + (iv > 1 ? "s" : "") + ' pending</span>');
+    var pos = (p.cultures || []).filter(function(c){ return c.status === "growth"; }).length;
+    if(pos) chips.push('<span class="chip alert">' + pos + ' positive culture' + (pos > 1 ? "s" : "") + '</span>');
+    var ho = latest(p.handover);
+    var stale = !archived(p) && hoursSince(p.updatedAt) >= 4;
+    return '<button type="button" class="card s-' + ck + '" data-open="' + esc(p.id) + '">' +
+      '<div class="c-top"><div class="bedno">' + esc(p.bed || "–") + '</div><div class="c-id"><div class="c-name">' + esc(p.name || "Unnamed") + '</div><div class="c-meta">' + (meta || "&nbsp;") + '</div></div>' +
+      '<span class="pill">' + esc(COND[p.condition] || "Condition not set") + '</span></div>' +
+      (tags.length ? '<div class="tags">' + tags.join("") + '</div>' : "") + dxh + monitor(v) +
+      (chips.length ? '<div class="chips">' + chips.join("") + '</div>' : "") +
+      (ho ? '<div class="c-ho"><b>Handover:</b> ' + esc(ho.text) + '</div>' : "") +
+      '<div class="c-foot"><span class="' + (stale ? "stale" : "") + '">' + (stale ? "Not updated for " + ago(p.updatedAt).replace(" ago", "") : "Updated " + ago(p.updatedAt)) + (p.updatedByName ? " · " + esc(p.updatedByName) : "") + '</span></div>' +
+    '</button>';
+  }
+  function bedSort(a, b){ return String(a.bed || "~").localeCompare(String(b.bed || "~"), undefined, {numeric:true}); }
+  function paintGrid(){
+    var f = FILTERS.filter(function(t){ return t[0] === filter; })[0][2];
+    var q = query.toLowerCase();
+    var list = patients.filter(f).filter(function(p){
+      return !q || [p.bed, p.name, p.insurance].concat((p.dx || []).map(function(d){ return d.text; })).join(" ").toLowerCase().indexOf(q) >= 0;
+    }).sort(bedSort);
+    $("#grid").innerHTML = list.map(card).join("");
+    var empty = $("#empty");
+    if(list.length){ empty.hidden = true; return; }
+    empty.hidden = false;
+    if(!loaded) empty.innerHTML = "<h2>Loading patients…</h2>";
+    else if(!patients.length) empty.innerHTML = '<h2>No patients yet</h2><p>Admit the first patient with the 7 admission details. Everything else is filled in from the patient\'s dashboard.</p><button class="btn primary" type="button" data-admit>+ Admit patient</button>';
+    else empty.innerHTML = "<h2>Nobody here</h2><p>No patients match this filter" + (query ? " and search" : "") + ".</p>";
+  }
+  function paintAll(){ paintStats(); paintFilters(); paintGrid(); }
+
+  function paintPrint(){
+    var rows = active().sort(bedSort).map(function(p){
+      var v = latest(p.vitals), r = latest(p.resp), m = mapOf(v), ho = latest(p.handover);
+      var vt = v ? [v.hr ? "HR " + v.hr : "", (v.sbp || v.dbp) ? "BP " + (v.sbp||"?") + "/" + (v.dbp||"?") + (m ? " (" + m + ")" : "") : "", v.spo2 ? "SpO2 " + v.spo2 : "", v.temp ? "T " + v.temp : "", v.gcs ? "GCS " + v.gcs : ""].filter(Boolean).join("\n") : "";
+      var dx = (p.dx || []).map(function(d, i){ return (i+1) + ". " + d.text + " [" + dxBadge(d) + "]" + (d.plan ? "\n   Plan: " + d.plan : ""); }).join("\n");
+      var abx = (p.abx || []).filter(function(a){ return !a.stoppedAt; }).map(function(a){ return a.drug + " " + (a.dose || "") + " D" + dayN(a.start); }).join("\n");
+      var iv = (p.interventions || []).filter(function(i){ return !i.done; }).map(function(i){ return "☐ " + i.text; }).join("\n");
+      return "<tr><td><b>" + esc(p.bed) + "</b></td><td>" + esc(p.name) + "\n" + esc([p.age ? p.age + "y" : "", p.sex, p.weight ? p.weight + "kg" : ""].filter(Boolean).join(" ")) + (dayN(p.admitDate) ? "\nICU D" + dayN(p.admitDate) : "") + "\n" + esc(COND[p.condition] || "") + (p.code ? "\nCode " + esc(p.code) : "") + (p.allergy ? "\nAllergy: " + esc(p.allergy) : "") +
+        "</td><td>" + esc(dx) + "</td><td>" + esc(vt) + "</td><td>" + esc(respText(r)) + "</td><td>" + esc(abx) + "</td><td>" + esc(iv) + "</td><td>" + esc(ho ? ho.text : "") + "</td></tr>";
+    }).join("");
+    $("#printSheet").innerHTML = "<h2>" + esc(unitName) + " · " + new Date().toLocaleString("en-IN", {day:"2-digit", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit"}) + "</h2>" +
+      "<table><thead><tr><th>Bed</th><th>Patient</th><th>Diagnoses & plan</th><th>Vitals</th><th>Resp</th><th>Antibiotics</th><th>Interventions</th><th>Handover</th></tr></thead><tbody>" + rows + "</tbody></table>";
+  }
+
+  /* ---------- admit (7 questions only) ---------- */
+  function admitForm(p){
+    p = p || {};
+    return '<div class="fgrid">' +
+      F("name", "Name", "text", 6, {value:p.name, req:true}) +
+      F("age", "Age (years)", "number", 2, {value:p.age}) +
+      F("sex", "Gender", "select", 2, {value:p.sex, opts:[["","–"],["M","Male"],["F","Female"],["O","Other"]]}) +
+      F("weight", "Weight (kg)", "number", 2, {value:p.weight}) +
+      F("bed", "ICU bed no.", "text", 2, {value:p.bed, req:true}) +
+      F("admitDate", "Date of admission", "date", 2, {value:p.admitDate || today()}) +
+      F("insurance", "Type of insurance", "text", 2, {value:p.insurance, list:"dl_ins", ph:"Select or type"}) +
+    '</div>';
+  }
+  function openAdmit(){
+    modal('<h2>Admit patient</h2><p>Only the admission details here. Condition, diagnoses and everything else go in the patient\'s dashboard.</p><form id="admitNew">' + admitForm() +
+      '<div class="r" style="margin-top:14px"><button class="btn" data-close type="button">Cancel</button><button class="btn primary" type="submit">Admit</button></div></form>',
+      function(root, close){
+        var f = $("#admitNew", root); $("[name=name]", f).focus();
+        f.addEventListener("submit", async function(e){
+          e.preventDefault();
+          var d = formData(f);
+          if(!d.name || !d.bed){ toast("Name and bed number are needed"); return; }
+          var by = await needSig(); if(!by) return;
+          var now = nowISO();
+          var data = Object.assign(d, {condition:"", labTests:DEFAULT_LABS.slice(), createdAt:now, updatedAt:now, updatedByName:by, log:[{id:uid(), at:now, by:by, text:"Admitted to ICU, bed " + d.bed}]});
+          $("button[type=submit]", f).disabled = true;
+          try{ var id = await Store.add(data); close(); toast("Patient admitted"); if(id) openPatient(id, "sum"); }
+          catch(err){ toast(writeErr(err)); $("button[type=submit]", f).disabled = false; }
+        });
+      });
+  }
+
+  /* ---------- patient view ---------- */
+  var PTABS = [["sum","Summary"],["dx","Diagnosis & plan"],["vit","Vitals"],["resp","Respiratory & ABG"],["lines","Infusions & lines"],["abx","Antibiotics"],["io","Intake / output"],["labs","Labs"],["cult","Cultures"],["ho","Handover"]];
+  function cur(){ return view.id ? patients.filter(function(p){ return p.id === view.id; })[0] || null : null; }
+  function openPatient(id, tab){
+    view = {id:id, tab:tab || "sum", dirty:{}};
+    var p = cur(); if(!p) return;
+    $("#view").innerHTML = '<div class="scrim" data-act="close"></div><section class="pv" role="dialog" aria-modal="true" aria-labelledby="pvName">' +
+      '<header class="pv-head"><div class="pv-title"><div class="bedno" id="pvBed"></div><div class="who"><h2 id="pvName"></h2><div class="meta" id="pvMeta"></div></div><span class="pill" id="pvPill"></span><button class="x" type="button" data-act="close" aria-label="Close">×</button></div>' +
+      '<nav class="ptabs" id="ptabs"></nav></header><div class="pv-body" id="pvBody"></div></section>';
+    document.body.style.overflow = "hidden";
+    renderTab();
+  }
+  function anyDirty(){ return Object.keys(view.dirty).some(function(k){ return view.dirty[k]; }); }
+  function closeView(force){
+    if(!force && anyDirty()){ confirmBox("Discard changes?", "Some edits on this page aren't saved.", "Discard", function(){ closeView(true); }); return; }
+    $("#view").innerHTML = ""; view = {id:null, tab:"sum", dirty:{}}; document.body.style.overflow = "";
+  }
+  function switchTab(t){
+    if(t === view.tab) return;
+    if(anyDirty()){ confirmBox("Discard changes?", "Some edits on this tab aren't saved.", "Discard", function(){ view.dirty = {}; view.tab = t; renderTab(); }); return; }
+    view.tab = t; renderTab();
+  }
+  function renderTab(){
+    var p = cur(); if(!p) return;
+    view.dirty = {};
+    $("#pvBody").innerHTML = TAB[view.tab].build(p);
+    $("#pvBody").scrollTop = 0;
+    paintHead(p); TAB[view.tab].paint(p);
+  }
+  function paintHead(p){
+    var ck = condKey(p), d = dayN(p.admitDate);
+    var bed = $("#pvBed"); bed.textContent = p.bed || "–"; bed.className = "bedno s-" + ck;
+    $("#pvName").textContent = p.name || "Unnamed";
+    $("#pvMeta").textContent = [[p.age ? p.age + "y" : "", p.sex || ""].filter(Boolean).join(" "), p.weight ? p.weight + " kg" : "", d ? "ICU day " + d : "", p.insurance || "", p.code ? "Code " + p.code : ""].filter(Boolean).join(" · ");
+    var pill = $("#pvPill"); pill.textContent = COND[p.condition] || "Condition not set"; pill.className = "pill s-" + ck;
+    var badges = {sum:pendingIv(p), abx:abxUnseen(p) ? "!" : 0, cult:(p.cultures || []).filter(function(c){ return c.status === "growth"; }).length};
+    $("#ptabs").innerHTML = PTABS.map(function(t){
+      return '<button type="button" class="ptab" data-act="tab" data-tab="' + t[0] + '" aria-selected="' + (view.tab === t[0]) + '">' + t[1] + (badges[t[0]] ? '<span class="dot">' + badges[t[0]] + '</span>' : "") + '</button>';
+    }).join("");
+  }
+  function refreshView(){
+    if(!view.id || !$("#pvBody")) return;
+    var p = cur();
+    if(!p){ closeView(true); toast("That record was removed"); return; }
+    paintHead(p); TAB[view.tab].paint(p);
+  }
+  function by(x){ return x && x.by ? " · " + esc(x.by) : ""; }
+
+  /* ---------- tabs ---------- */
+  var TAB = {};
+
+  TAB.sum = {
+    build: function(p){
+      return '<section class="sec"><div class="sec-h"><h3>Condition & alerts</h3></div><form data-form="summary" data-dirty="summary"><div class="fgrid">' +
+          F("condition", "Condition", "select", 2, {opts:[["","— Not set —"]].concat(CONDITIONS)}) +
+          F("code", "Code", "select", 2, {opts:[["","—"]].concat(CODES)}) +
+          F("allergy", "Drug allergy", "text", 2, {ph:"e.g. Penicillin, or NKDA"}) +
+        '</div><div class="lbl" style="margin-top:12px">Systems affected</div><div class="syschips">' +
+          SYSTEMS.map(function(s){ return '<label class="sys"><input type="checkbox" name="systems" value="' + esc(s) + '">' + esc(s) + '</label>'; }).join("") +
+        '</div><div class="form-end"><button class="btn primary" type="submit">Save</button></div></form></section>' +
+        '<section class="sec"><div class="sec-h"><h3>Interventions planned for today</h3><span class="hint">tick when done</span></div><div id="ivList"></div>' +
+          '<form class="addrow" data-form="addIv"><input name="text" type="text" placeholder="e.g. Tracheostomy, repeat CT brain, ICD insertion" aria-label="New intervention"><button class="btn" type="submit">Add</button></form></section>' +
+        '<section class="sec"><div class="sec-h"><h3>Latest handover</h3><button type="button" class="linkbtn" data-act="tab" data-tab="ho">Write handover →</button></div><div id="hoLatest"></div></section>' +
+        '<section class="sec"><div class="sec-h"><h3>Admission details</h3></div><form data-form="admit" data-dirty="admit">' + admitForm(p) +
+          '<div class="form-end"><button type="button" class="btn danger small" data-act="delPatient">Delete record</button><span class="grow"></span><button class="btn primary" type="submit">Save</button></div></form></section>';
+    },
+    paint: function(p){
+      if(!view.dirty.summary) fillForm($("[data-form=summary]"), {condition:p.condition || "", code:p.code || "", allergy:p.allergy || "", systems:p.systems || []});
+      if(!view.dirty.admit) fillForm($("[data-form=admit]"), p);
+      var t = today();
+      var items = (p.interventions || []).filter(function(i){ return i.date === t || !i.done; })
+        .sort(function(a, b){ return (a.done - b.done) || String(a.date).localeCompare(String(b.date)); });
+      $("#ivList").innerHTML = items.length ? items.map(function(i){
+        return '<div class="todo' + (i.done ? " done" : "") + '"><input type="checkbox" data-chg="iv" data-id="' + i.id + '"' + (i.done ? " checked" : "") + ' aria-label="Done"><span class="t"><span>' + esc(i.text) + '</span>' +
+          '<span class="by">' + (i.date !== t ? "Planned " + dshort(i.date) + " · " : "") + (i.done ? "Done " + stamp(i.doneAt) + " · " + esc(i.doneBy) : "Added " + stamp(i.at) + by(i)) + '</span></span>' +
+          '<button class="del" type="button" data-act="delIv" data-id="' + i.id + '" aria-label="Remove">×</button></div>';
+      }).join("") : '<p class="none">No interventions planned for today.</p>';
+      var ho = latest(p.handover);
+      $("#hoLatest").innerHTML = ho ? '<div class="ho"><div class="meta">' + stamp(ho.at) + by(ho) + '</div><div class="txt">' + esc(ho.text) + '</div></div>' : '<p class="none">No handover written yet.</p>';
+    }
+  };
+
+  function dxFormHtml(d, formName){
+    d = d || {mgmt:"conservative"};
+    return '<form data-form="' + formName + '" data-mgmt="' + (d.mgmt || "conservative") + '"' + (d.id ? ' data-id="' + d.id + '"' : "") + '><div class="fgrid">' +
+      F("text", "Diagnosis", "text", 6, {value:d.text, ph:"e.g. Fracture shaft femur (R), closed"}) +
+      '<div class="f w6"><span class="lbl">Plan of management</span><div class="seg">' +
+        '<label><input type="radio" name="mgmt" value="surgical" data-chg="mgmt"' + (d.mgmt === "surgical" ? " checked" : "") + '>Surgical</label>' +
+        '<label><input type="radio" name="mgmt" value="conservative" data-chg="mgmt"' + (d.mgmt !== "surgical" ? " checked" : "") + '>Conservative</label></div></div>' +
+      F("procedure", "Surgery / procedure", "text", 4, {value:d.procedure, cls:"surg-only", ph:"e.g. ORIF with IMIL nailing"}) +
+      F("surgeryDate", "Date of surgery", "date", 2, {value:d.surgeryDate, cls:"surg-only"}) +
+      F("plan", "Plan for this diagnosis", "textarea", 6, {value:d.plan, rows:3}) +
+    '</div>';
+  }
+  TAB.dx = {
+    build: function(){
+      return '<section class="sec"><div class="sec-h"><h3>Diagnoses</h3><span class="hint">each diagnosis has its own plan · POD counts from the surgery date</span></div><div id="dxList"></div></section>' +
+        '<section class="sec"><h3>Add diagnosis</h3>' + dxFormHtml(null, "addDx") + '<div class="form-end"><button class="btn primary" type="submit">Add diagnosis</button></div></form></section>';
+    },
+    paint: function(p){
+      var dx = p.dx || [];
+      $("#dxList").innerHTML = dx.length ? dx.map(function(d, i){
+        var b = dxBadge(d);
+        return '<article class="dx"><div class="dx-h"><span class="dx-n">' + (i+1) + '</span><div class="dx-t">' + esc(d.text) + '</div><span class="mg ' + (d.mgmt || "conservative") + '">' + (d.mgmt === "surgical" ? "Surgical" : "Conservative") + '</span></div>' +
+          (d.mgmt === "surgical" ? '<div class="dx-surg">' + esc(d.procedure || "Surgery") + ' · ' + (d.surgeryDate ? dshort(d.surgeryDate) : "date not set") + (d.surgeryDate ? '<b class="pod">' + esc(b) + '</b>' : "") + '</div>' : "") +
+          '<div class="dx-plan"><span class="lbl">Plan</span>' + (d.plan ? esc(d.plan) : '<i style="color:var(--ink-3)">No plan written yet</i>') + '</div>' +
+          '<div class="rowfoot"><span>' + (d.at ? "Updated " + stamp(d.at) + by(d) : "") + '</span><span class="acts"><button type="button" class="btn small" data-act="editDx" data-id="' + d.id + '">Edit</button><button type="button" class="btn small danger" data-act="delDx" data-id="' + d.id + '">Delete</button></span></div></article>';
+      }).join("") : '<p class="none">No diagnoses yet. Add each injury or problem separately below.</p>';
+    }
+  };
+
+  function chartIcon(){ return '<svg width="14" height="12" viewBox="0 0 26 18" aria-hidden="true"><polyline points="1,10 7,10 9,5 12,15 15,2 18,10 25,10" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/></svg>'; }
+  function vitRow(v){
+    var m = mapOf(v);
+    return '<tr><td class="num">' + stamp(v.at) + '</td>' + ["hr"].map(function(k){ return '<td class="num' + (vAbn(k, v) ? " ab" : "") + '">' + esc(v[k] || "") + '</td>'; }).join("") +
+      '<td class="num' + (vAbn("bp", v) ? " ab" : "") + '">' + ((v.sbp || v.dbp) ? esc((v.sbp || "?") + "/" + (v.dbp || "?")) : "") + '</td><td class="num' + (m != null && m < 65 ? " ab" : "") + '">' + (m || "") + '</td>' +
+      ["spo2","temp","rr","gcs","grbs","cvp","uo"].map(function(k){ return '<td class="num' + (vAbn(k, v) ? " ab" : "") + '">' + esc(v[k] || "") + '</td>'; }).join("") +
+      '<td><span class="by">' + esc(v.by || "") + '</span></td></tr>';
+  }
+  function vitTable(list){
+    return '<div class="tablewrap"><table class="t"><thead><tr><th>Time</th><th>HR</th><th>BP</th><th>MAP</th><th>SpO₂</th><th>Temp</th><th>RR</th><th>GCS</th><th>GRBS</th><th>CVP</th><th>Urine ml/h</th><th>By</th></tr></thead><tbody>' + list.map(vitRow).join("") + '</tbody></table></div>';
+  }
+  TAB.vit = {
+    build: function(){
+      return '<section class="sec"><div class="sec-h"><h3>Latest vitals</h3><button class="btn chart" type="button" data-act="vitChart">' + chartIcon() + 'VITAL CHART</button></div><div id="vitLatest"></div></section>' +
+        '<section class="sec"><h3>Enter hourly vitals</h3><form data-form="addVit" data-dirty="vit"><div class="fgrid">' + F("at", "Time", "datetime-local", 2, {value:localDT()}) +
+        VITALS.map(function(x){ return F(x[0], x[1] + (x[2] ? " " + x[2] : ""), x[0] === "gcs" ? "text" : "number", 1, {ph:x[0] === "gcs" ? "E4V5M6" : ""}); }).join("") +
+        '</div><div class="form-end"><span class="grow" id="vitCalc"></span><button class="btn primary" type="submit">Save reading</button></div></form></section>' +
+        '<section class="sec"><div class="sec-h"><h3>Recent readings</h3><span class="hint">last 6 · open VITAL CHART for all</span></div><div id="vitRecent"></div></section>';
+    },
+    paint: function(p){
+      var list = byTime(p.vitals);
+      $("#vitLatest").innerHTML = monitor(list[0]) + (list[0] ? '<p class="hint" style="margin:8px 0 0">Recorded ' + stamp(list[0].at) + by(list[0]) + '</p>' : "");
+      $("#vitRecent").innerHTML = list.length ? vitTable(list.slice(0, 6)) : '<p class="none">No readings yet.</p>';
+    }
+  };
+  function trendSvg(list){
+    var pts = list.slice(0, 24).reverse();
+    if(pts.length < 2) return "";
+    var W = 700, H = 210, L = 34, R = 10, T = 10, B = 26, max = 200;
+    var x = function(i){ return L + (W - L - R) * (pts.length === 1 ? 0 : i/(pts.length - 1)); };
+    var y = function(v){ return T + (H - T - B) * (1 - Math.min(Math.max(v, 0), max)/max); };
+    var grid = [0,50,100,150,200].map(function(g){ return '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(g) + '" y2="' + y(g) + '" stroke="var(--line)" stroke-width="1"/><text x="' + (L - 6) + '" y="' + (y(g) + 4) + '" text-anchor="end" font-size="10" fill="var(--ink-3)">' + g + '</text>'; }).join("");
+    function line(key, color, fn){
+      var seg = [];
+      pts.forEach(function(v, i){ var val = fn ? fn(v) : num(v[key]); if(val != null) seg.push(x(i).toFixed(1) + "," + y(val).toFixed(1)); });
+      return seg.length > 1 ? '<polyline points="' + seg.join(" ") + '" fill="none" stroke="' + color + '" stroke-width="2" stroke-linejoin="round"/>' : "";
+    }
+    var labels = pts.map(function(v, i){ return (i === 0 || i === pts.length - 1 || i % Math.ceil(pts.length/6) === 0) ? '<text x="' + x(i) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="10" fill="var(--ink-3)">' + hm(v.at) + '</text>' : ""; }).join("");
+    return '<div class="legend"><span><i style="background:#1fae5b"></i>HR</span><span><i style="background:#e0475b"></i>MAP</span><span><i style="background:#1a9fc4"></i>SpO₂</span><span><i style="background:#d19a00"></i>RR</span></div>' +
+      '<svg class="trend" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Trend of last ' + pts.length + ' readings">' + grid + line("hr", "#1fae5b") + line(null, "#e0475b", mapOf) + line("spo2", "#1a9fc4") + line("rr", "#d19a00") + labels + '</svg>';
+  }
+
+  TAB.resp = {
+    build: function(p){
+      var r = latest(p.resp) || {support:"Room air"};
+      return '<section class="sec"><div class="sec-h"><h3>Respiratory parameters</h3><button class="btn chart" type="button" data-act="paramChart">' + chartIcon() + 'PARAMETER CHART</button></div><div id="respLatest"></div>' +
+        '<form data-form="addResp" data-dirty="resp" style="margin-top:12px"><div class="fgrid">' + F("at", "Time", "datetime-local", 2, {value:localDT()}) +
+        F("support", "Support", "select", 2, {opts:SUPPORT, value:r.support}) + F("mode", "Mode", "text", 2, {list:"dl_mode", value:r.mode, ph:"e.g. SIMV-VC"}) +
+        RESP_F.map(function(x){ return F(x[0], x[1] + " " + x[2], "number", 1, {value:r[x[0]]}); }).join("") +
+        '</div><div class="form-end"><span class="grow" id="respCalc"></span><button class="btn primary" type="submit">Save parameters</button></div></form></section>' +
+        '<section class="sec"><div class="sec-h"><h3>ABG</h3><button class="btn chart" type="button" data-act="abgChart">' + chartIcon() + 'ABG CHART</button></div><div id="abgLatest"></div>' +
+        '<form data-form="addAbg" data-dirty="abg" style="margin-top:12px"><div class="fgrid">' + F("at", "Time of sample", "datetime-local", 2, {value:localDT()}) +
+        ABG_F.map(function(x){ return F(x[0], x[1] + (x[2] ? " " + x[2] : ""), "number", 1, {value:x[0] === "fio2" ? r.fio2 : ""}); }).join("") +
+        '</div><div class="form-end"><span class="grow" id="abgCalc"></span><button class="btn primary" type="submit">Save ABG</button></div></form></section>';
+    },
+    paint: function(p){
+      var r = latest(p.resp), a = latest(p.abg);
+      $("#respLatest").innerHTML = r ? '<div class="chips"><span class="chip vent">' + esc(respText(r)) + '</span>' + RESP_F.filter(function(x){ return r[x[0]] && ["fio2","peep"].indexOf(x[0]) < 0; }).map(function(x){ return '<span class="chip">' + x[1] + " " + esc(r[x[0]]) + '</span>'; }).join("") + '</div><p class="hint" style="margin:6px 0 0">Set ' + stamp(r.at) + by(r) + '</p>' : '<p class="none">No parameters recorded yet.</p>';
+      if(a){
+        var pf = pfOf(a.po2, a.fio2);
+        $("#abgLatest").innerHTML = '<div class="chips">' + ABG_F.filter(function(x){ return a[x[0]] !== "" && a[x[0]] != null; }).map(function(x){ return '<span class="chip' + (out(a[x[0]], x[3], x[4]) ? " alert" : "") + '">' + x[1] + " " + esc(a[x[0]]) + '</span>'; }).join("") + (pf ? '<span class="chip' + (pf < 300 ? " alert" : "") + '">P/F ' + pf + '</span>' : "") + '</div><p class="hint" style="margin:6px 0 0">Sample ' + stamp(a.at) + by(a) + '</p>';
+      } else $("#abgLatest").innerHTML = '<p class="none">No ABG recorded yet.</p>';
+    }
+  };
+
+  TAB.lines = {
+    build: function(){
+      return '<section class="sec"><div class="sec-h"><h3>Running now</h3><span class="hint">Day 1 = day started / inserted</span></div><div id="lnActive"></div></section>' +
+        '<section class="sec"><h3>Add infusion, line, tube or drain</h3><form data-form="addLine"><div class="fgrid">' +
+        F("kind", "Type", "select", 2, {opts:LINE_KINDS}) + F("start", "Started / inserted on", "date", 2, {value:today()}) + F("site", "Site (if any)", "text", 2, {ph:"e.g. R IJV, L ICD"}) +
+        F("detail", "Details", "text", 6, {ph:"e.g. Noradrenaline 8 mg in 50 ml @ 5 ml/h · Triple lumen CVC · 7.5 ETT at 22 cm"}) +
+        '</div><div class="form-end"><button class="btn primary" type="submit">Add</button></div></form></section>' +
+        '<section class="sec"><h3>Removed / stopped</h3><div id="lnOld"></div></section>';
+    },
+    paint: function(p){
+      var list = p.lines || [];
+      var act = list.filter(function(l){ return !l.removedAt; }).sort(function(a, b){ return LINE_KINDS.indexOf(a.kind) - LINE_KINDS.indexOf(b.kind); });
+      var old = list.filter(function(l){ return l.removedAt; }).sort(function(a, b){ return String(b.removedAt).localeCompare(String(a.removedAt)); });
+      function row(l, isOld){
+        var d = dayN(l.start);
+        return '<div class="item"><span class="kind">' + esc(l.kind) + '</span><div class="main"><b>' + esc(l.detail || l.kind) + '</b>' + (l.site ? " · " + esc(l.site) : "") +
+          '<span class="by">' + (isOld ? "Started " + dshort(l.start) + " · removed " + stamp(l.removedAt) + (l.removedBy ? " · " + esc(l.removedBy) : "") + (l.removeNote ? " · " + esc(l.removeNote) : "") : "Since " + dshort(l.start) + by(l)) + '</span></div>' +
+          (isOld ? "" : '<span class="dayn">' + (d ? "Day " + d : "") + '</span><span class="acts"><button type="button" class="btn small" data-act="editLine" data-id="' + l.id + '">Edit</button><button type="button" class="btn small danger" data-act="stopLine" data-id="' + l.id + '">' + (l.kind === "Infusion" ? "Stop" : "Remove") + '</button></span>') + '</div>';
+      }
+      $("#lnActive").innerHTML = act.length ? act.map(function(l){ return row(l, false); }).join("") : '<p class="none">Nothing running.</p>';
+      $("#lnOld").innerHTML = old.length ? old.slice(0, 30).map(function(l){ return row(l, true); }).join("") : '<p class="none">None.</p>';
+    }
+  };
+
+  TAB.abx = {
+    build: function(){
+      return '<div id="abxAlert"></div>' +
+        '<section class="sec"><div class="sec-h"><h3>Ongoing antibiotics</h3><span class="hint">Day 1 = start date</span></div><div id="abxActive"></div></section>' +
+        '<section class="sec"><h3>Start antibiotic</h3><form data-form="addAbx"><div class="fgrid">' +
+        F("drug", "Antibiotic", "text", 2, {list:"dl_abx", ph:"Select or type"}) + F("dose", "Dose", "text", 1, {ph:"e.g. 1 g"}) +
+        F("route", "Route", "select", 1, {opts:["IV","PO / RT","IM","Nebulised","Topical"]}) + F("freq", "Frequency", "text", 1, {list:"dl_freq", ph:"e.g. q8h"}) +
+        F("start", "Start date", "date", 1, {value:today()}) + F("reason", "Indication / note", "text", 6, {ph:"e.g. Empirical for VAP, as per culture sensitivity"}) +
+        '</div><div class="form-end"><button class="btn primary" type="submit">Start antibiotic</button></div></form></section>' +
+        '<section class="sec"><h3>Stopped & change history</h3><div id="abxOld"></div></section>';
+    },
+    paint: function(p){
+      var list = p.abx || [];
+      $("#abxAlert").innerHTML = abxUnseen(p) ?
+        '<div class="alertbox"><span><b>Antibiotics changed</b> by ' + esc(p.abxChangedBy || "someone") + ' at ' + stamp(p.abxChangedAt) + (p.abxLastChange ? ": " + esc(p.abxLastChange) : "") + '</span><button class="btn small" type="button" data-act="abxSeen">Mark as seen</button></div>' :
+        (p.abxSeenAt ? '<div class="okbox">Latest change seen by ' + esc(p.abxSeenBy || "") + ' at ' + stamp(p.abxSeenAt) + '</div>' : "");
+      var act = list.filter(function(a){ return !a.stoppedAt; });
+      $("#abxActive").innerHTML = act.length ? act.map(function(a){
+        return '<div class="item"><div class="main"><b>' + esc(a.drug) + '</b> ' + esc([a.dose, a.route, a.freq].filter(Boolean).join(" · ")) +
+          (a.reason ? '<span class="by">' + esc(a.reason) + '</span>' : "") + '<span class="by">Started ' + dshort(a.start) + by(a) + (a.changedAt ? " · changed " + stamp(a.changedAt) + " · " + esc(a.changedBy) : "") + '</span></div>' +
+          '<span class="dayn">Day ' + (dayN(a.start) || "?") + '</span><span class="acts"><button type="button" class="btn small" data-act="changeAbx" data-id="' + a.id + '">Change</button><button type="button" class="btn small danger" data-act="stopAbx" data-id="' + a.id + '">Stop</button></span></div>';
+      }).join("") : '<p class="none">No antibiotics running.</p>';
+      var hist = [];
+      list.forEach(function(a){ (a.hist || []).forEach(function(h){ hist.push({at:h.at, by:h.by, text:a.drug + ": " + h.text}); }); });
+      hist = byTime(hist);
+      $("#abxOld").innerHTML = hist.length ? '<ul class="log">' + hist.slice(0, 40).map(function(h){ return '<li><time>' + stamp(h.at) + '</time><span>' + esc(h.text) + by(h) + '</span></li>'; }).join("") + '</ul>' : '<p class="none">No changes yet.</p>';
+    }
+  };
+
+  var IO_IN = [["ivIn","IV fluids"],["oralIn","Oral / RT feeds"],["bloodIn","Blood products"]];
+  var IO_OUT = [["urine","Urine"],["drain","Drains"],["rt","RT aspirate"],["otherOut","Other losses"]];
+  function ioSum(e, keys){ return keys.reduce(function(s, k){ return s + (num(e[k[0]]) || 0); }, 0); }
+  TAB.io = {
+    build: function(){
+      return '<section class="sec"><div class="sec-h"><h3>Last 24 hours</h3></div><div id="ioSum"></div></section>' +
+        '<section class="sec"><h3>Enter intake / output</h3><form data-form="addIo" data-dirty="io"><div class="fgrid">' +
+        F("at", "Time (end of period)", "datetime-local", 2, {value:localDT()}) + F("period", "Period", "select", 2, {opts:["Hourly","8 am – 2 pm","2 pm – 8 pm","8 pm – 8 am","24 h total","Other"]}) + '<div class="f w2"></div>' +
+        IO_IN.map(function(x){ return F(x[0], "In: " + x[1] + " ml", "number", 2); }).join("") +
+        IO_OUT.map(function(x){ return F(x[0], "Out: " + x[1] + " ml", "number", x[0] === "otherOut" ? 2 : 1); }).join("") +
+        '</div><div class="form-end"><button class="btn primary" type="submit">Save</button></div></form></section>' +
+        '<section class="sec"><h3>Entries</h3><div id="ioList"></div></section>';
+    },
+    paint: function(p){
+      var list = byTime(p.io);
+      var day = list.filter(function(e){ return hoursSince(e.at) <= 24; });
+      var tin = day.reduce(function(s, e){ return s + ioSum(e, IO_IN); }, 0), tout = day.reduce(function(s, e){ return s + ioSum(e, IO_OUT); }, 0), turine = day.reduce(function(s, e){ return s + (num(e.urine) || 0); }, 0);
+      var w = num(p.weight);
+      $("#ioSum").innerHTML = day.length ? '<div class="chips"><span class="chip">In ' + tin + ' ml</span><span class="chip">Out ' + tout + ' ml</span><span class="chip ' + (tin - tout > 0 ? "warn" : "vent") + '">Balance ' + (tin - tout > 0 ? "+" : "") + (tin - tout) + ' ml</span><span class="chip">Urine ' + turine + ' ml' + (w ? " (" + (turine/w/24).toFixed(2) + " ml/kg/h)" : "") + '</span></div>' : '<p class="none">No entries in the last 24 hours.</p>';
+      $("#ioList").innerHTML = list.length ? '<div class="tablewrap"><table class="t"><thead><tr><th>Time</th><th>Period</th>' + IO_IN.map(function(x){ return "<th>" + x[1] + "</th>"; }).join("") + '<th>Total in</th>' + IO_OUT.map(function(x){ return "<th>" + x[1] + "</th>"; }).join("") + '<th>Total out</th><th>Balance</th><th>By</th><th></th></tr></thead><tbody>' +
+        list.slice(0, 40).map(function(e){ var i = ioSum(e, IO_IN), o = ioSum(e, IO_OUT);
+          return '<tr><td class="num">' + stamp(e.at) + '</td><td>' + esc(e.period || "") + '</td>' + IO_IN.map(function(x){ return '<td class="num">' + esc(e[x[0]] || "") + '</td>'; }).join("") + '<td class="num"><b>' + i + '</b></td>' + IO_OUT.map(function(x){ return '<td class="num">' + esc(e[x[0]] || "") + '</td>'; }).join("") + '<td class="num"><b>' + o + '</b></td><td class="num">' + (i - o > 0 ? "+" : "") + (i - o) + '</td><td><span class="by">' + esc(e.by || "") + '</span></td><td><button class="del" type="button" data-act="delIo" data-id="' + e.id + '" aria-label="Delete entry">×</button></td></tr>';
+        }).join("") + '</tbody></table></div>' : '<p class="none">No entries yet.</p>';
+    }
+  };
+
+  function labTests(p){ return (p.labTests && p.labTests.length) ? p.labTests : DEFAULT_LABS; }
+  TAB.labs = {
+    build: function(p){
+      var tests = labTests(p);
+      return '<section class="sec"><div class="sec-h"><h3>Serial chart</h3><button class="btn" type="button" data-act="pickLabs">Select investigations</button></div><div id="labChart"></div><p class="hint" style="margin:8px 0 0">Red values are outside usual adult ranges. Your lab\'s ranges may differ.</p></section>' +
+        '<section class="sec"><h3>Enter report</h3><form data-form="addLab" data-dirty="lab"><div class="fgrid">' + F("at", "Date & time of sample", "datetime-local", 2, {value:localDT()}) + '<div class="f w4" style="grid-column:span 4"></div>' +
+        tests.map(function(t){ var u = LAB[t] ? LAB[t].unit : ""; return F("t:" + t, esc(t) + (u ? " " + u : ""), "text", 1); }).join("") +
+        '</div><div class="form-end"><span class="grow">Fill only the tests that were done.</span><button class="btn primary" type="submit">Save report</button></div></form></section>';
+    },
+    paint: function(p){
+      var reps = byTime(p.labs);
+      if(!reps.length){ $("#labChart").innerHTML = '<p class="none">No reports yet.</p>'; return; }
+      var tests = labTests(p).slice();
+      reps.forEach(function(r){ Object.keys(r.vals || {}).forEach(function(t){ if(tests.indexOf(t) < 0) tests.push(t); }); });
+      tests.sort(function(a, b){ var ia = LAB_ORDER.indexOf(a), ib = LAB_ORDER.indexOf(b); return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib); });
+      $("#labChart").innerHTML = '<div class="tablewrap"><table class="t"><thead><tr><th class="rowh">Test</th>' + reps.map(function(r){ return '<th>' + stamp(r.at) + ' <button class="del" type="button" data-act="delLab" data-id="' + r.id + '" aria-label="Delete report">×</button></th>'; }).join("") + '</tr></thead><tbody>' +
+        tests.map(function(t){ var L = LAB[t] || {};
+          return '<tr><td class="rowh">' + esc(t) + (L.unit ? ' <span class="by">' + esc(L.unit) + '</span>' : "") + '</td>' + reps.map(function(r){ var v = (r.vals || {})[t]; return '<td class="num' + (out(v, L.lo, L.hi) ? " ab" : "") + '">' + esc(v == null ? "" : v) + '</td>'; }).join("") + '</tr>';
+        }).join("") + '</tbody></table></div>';
+    }
+  };
+
+  TAB.cult = {
+    build: function(){
+      return '<section class="sec"><div class="sec-h"><h3>Organisms isolated</h3><span class="hint">which bacteria grew from which sample</span></div><div id="orgSum"></div></section>' +
+        '<section class="sec"><h3>Cultures sent</h3><div id="cultList"></div></section>' +
+        '<section class="sec"><h3>Send new culture</h3><form data-form="addCult"><div class="fgrid">' +
+        F("sample", "Sample", "select", 2, {opts:SAMPLES}) + F("site", "Site / details", "text", 2, {ph:"e.g. L thigh wound, CVC lumen"}) + F("sent", "Sent on", "date", 2, {value:today()}) +
+        '</div><div class="form-end"><button class="btn primary" type="submit">Add culture</button></div></form></section>';
+    },
+    paint: function(p){
+      var list = (p.cultures || []).slice().sort(function(a, b){ return String(b.sent).localeCompare(String(a.sent)); });
+      var orgs = {};
+      list.forEach(function(c){ if(c.status === "growth" && c.organism){ c.organism.split(/\s*[,;+]\s*/).forEach(function(o){ if(!o) return; (orgs[o] = orgs[o] || []).push(c); }); } });
+      var names = Object.keys(orgs);
+      $("#orgSum").innerHTML = names.length ? '<div class="tablewrap"><table class="t"><thead><tr><th>Organism</th><th>Grown from</th><th>Resistant to</th></tr></thead><tbody>' + names.map(function(o){
+        return '<tr><td class="org">' + esc(o) + '</td><td style="white-space:normal">' + orgs[o].map(function(c){ return esc(c.sample) + (c.site ? " (" + esc(c.site) + ")" : "") + " · " + dshort(c.sent); }).join("<br>") + '</td><td style="white-space:normal">' + orgs[o].map(function(c){ return esc(c.resistant || "—"); }).join("<br>") + '</td></tr>';
+      }).join("") + '</tbody></table></div>' : '<p class="none">No growth reported yet.</p>';
+      $("#cultList").innerHTML = list.length ? list.map(function(c){
+        var st = CULT_STATUS.filter(function(s){ return s[0] === c.status; })[0] || CULT_STATUS[0];
+        return '<article class="cult"><div class="cult-h"><div><b>' + esc(c.sample) + '</b>' + (c.site ? " · " + esc(c.site) : "") + '<span class="by">Sent ' + dshort(c.sent) + (dayN(c.sent) ? " (day " + dayN(c.sent) + ")" : "") + by(c) + '</span></div><span class="st ' + st[0] + '">' + st[1] + '</span></div>' +
+          (c.organism ? '<div><span class="org">' + esc(c.organism) + '</span>' + (c.count ? " · " + esc(c.count) : "") + '</div>' : "") +
+          (c.sensitive || c.resistant || c.intermediate ? '<div class="sr">' + (c.sensitive ? '<div><span class="s">Sensitive:</span> ' + esc(c.sensitive) + '</div>' : "") + (c.intermediate ? '<div><span class="i">Intermediate:</span> ' + esc(c.intermediate) + '</div>' : "") + (c.resistant ? '<div><span class="r">Resistant:</span> ' + esc(c.resistant) + '</div>' : "") + '</div>' : "") +
+          ((c.files || []).length ? '<div class="files">' + c.files.map(function(f){ return '<button type="button" class="filebtn" data-act="viewFile" data-file="' + esc(f.id) + '" data-name="' + esc(f.name) + '">' + (/pdf/.test(f.mime) ? "PDF" : "Photo") + ' · ' + esc(f.name) + '</button>'; }).join("") + '</div>' : "") +
+          '<div class="rowfoot"><span>' + (c.reportAt ? "Report updated " + stamp(c.reportAt) + (c.reportBy ? " · " + esc(c.reportBy) : "") : "") + '</span><span class="acts"><button type="button" class="btn small" data-act="editCult" data-id="' + c.id + '">Update report</button>' +
+          '<label class="btn small upl">Upload report<input type="file" accept="image/*,application/pdf" data-chg="upload" data-id="' + c.id + '"></label><button type="button" class="btn small danger" data-act="delCult" data-id="' + c.id + '">Delete</button></span></div></article>';
+      }).join("") : '<p class="none">No cultures sent yet.</p>';
+    }
+  };
+
+  TAB.ho = {
+    build: function(){
+      return '<section class="sec"><h3>Hand over to next ICU in-charge</h3><form data-form="addHo" data-dirty="ho"><textarea name="text" rows="5" aria-label="Handover note" placeholder="Current status, events this shift, pending tasks, what to watch overnight…"></textarea><div class="form-end"><button class="btn primary" type="submit">Save handover</button></div></form></section>' +
+        '<section class="sec"><h3>Previous handovers</h3><div id="hoList"></div></section>' +
+        '<section class="sec"><h3>Activity</h3><div id="actList"></div></section>';
+    },
+    paint: function(p){
+      var ho = byTime(p.handover);
+      $("#hoList").innerHTML = ho.length ? ho.map(function(h){ return '<div class="ho"><div class="meta">' + stamp(h.at) + by(h) + '</div><div class="txt">' + esc(h.text) + '</div></div>'; }).join("") : '<p class="none">No handovers yet.</p>';
+      var log = byTime(p.log);
+      $("#actList").innerHTML = log.length ? '<ul class="log">' + log.slice(0, 60).map(function(e){ return '<li><time>' + stamp(e.at) + '</time><span>' + esc(e.text) + by(e) + '</span></li>'; }).join("") + '</ul>' : '<p class="none">No activity yet.</p>';
+    }
+  };
+
+  /* ---------- form submissions ---------- */
+  function hasAny(d, keys){ return keys.some(function(k){ return d[k] !== "" && d[k] != null; }); }
+  var FORMS = {
+    summary: function(f, p){
+      var d = formData(f), ch = [];
+      if(d.condition !== (p.condition || "")) ch.push("Condition → " + (COND[d.condition] || "not set"));
+      if(d.code !== (p.code || "")) ch.push("Code → " + (d.code || "none"));
+      if(d.allergy !== (p.allergy || "")) ch.push("Allergy → " + (d.allergy || "none"));
+      if((d.systems || []).join() !== (p.systems || []).join()) ch.push("Systems → " + ((d.systems || []).join(", ") || "none"));
+      if(!ch.length){ view.dirty.summary = false; toast("No changes"); return; }
+      return commit(function(){ return {fields:{condition:d.condition, code:d.code, allergy:d.allergy, systems:d.systems || []}, log:ch.join(" · ")}; }, "Saved").then(function(ok){ if(ok) view.dirty.summary = false; });
+    },
+    admit: function(f, p){
+      var d = formData(f);
+      if(!d.name || !d.bed){ toast("Name and bed number are needed"); return; }
+      return commit(function(){ return {fields:d, log:"Updated admission details"}; }, "Saved").then(function(ok){ if(ok) view.dirty.admit = false; });
+    },
+    addIv: function(f){
+      var text = f.text.value.trim(); if(!text){ f.text.focus(); return; }
+      return commit(function(b, now){ return {ops:[OP("push", "interventions", {id:uid(), text:text, date:today(), at:now, by:b, done:false}, 300)], log:"Planned: " + text}; }).then(function(ok){ if(ok) f.reset(); });
+    },
+    addDx: function(f){
+      var d = formData(f); if(!d.text){ toast("Write the diagnosis first"); return; }
+      return commit(function(b, now){ return {ops:[OP("push", "dx", {id:uid(), text:d.text, mgmt:d.mgmt, procedure:d.mgmt === "surgical" ? d.procedure : "", surgeryDate:d.mgmt === "surgical" ? d.surgeryDate : "", plan:d.plan, at:now, by:b})], log:"Diagnosis added: " + d.text + " (" + d.mgmt + ")"}; }, "Diagnosis added").then(function(ok){ if(ok){ f.reset(); f.dataset.mgmt = "conservative"; } });
+    },
+    addVit: function(f, p){
+      var d = formData(f);
+      if(!hasAny(d, VITALS.map(function(x){ return x[0]; }))){ toast("Enter at least one value"); return; }
+      var item = {id:uid(), at:dtISO(d.at)}; VITALS.forEach(function(x){ if(d[x[0]]) item[x[0]] = d[x[0]]; });
+      var m = mapOf(item);
+      var txt = "Vitals " + hm(item.at) + ": " + [item.hr ? "HR " + item.hr : "", item.sbp ? "BP " + item.sbp + "/" + (item.dbp || "?") + (m ? " (MAP " + m + ")" : "") : "", item.spo2 ? "SpO₂ " + item.spo2 : "", item.temp ? "T " + item.temp : "", item.gcs ? "GCS " + item.gcs : ""].filter(Boolean).join(", ");
+      return commit(function(b){ item.by = b; return {ops:[OP("push", "vitals", item, 120)], log:txt}; }, "Reading saved").then(function(ok){ if(ok){ f.reset(); f.at.value = localDT(); view.dirty.vit = false; } });
+    },
+    addResp: function(f){
+      var d = formData(f);
+      var item = {id:uid(), at:dtISO(d.at), support:d.support, mode:d.mode}; RESP_F.forEach(function(x){ if(d[x[0]]) item[x[0]] = d[x[0]]; });
+      return commit(function(b){ item.by = b; return {ops:[OP("push", "resp", item, 40)], log:"Resp: " + respText(item) + (item.vt ? ", Vt " + item.vt : "")}; }, "Parameters saved").then(function(ok){ if(ok){ f.at.value = localDT(); view.dirty.resp = false; } });
+    },
+    addAbg: function(f, p){
+      var d = formData(f);
+      if(!d.fio2){ var lr = latest(p.resp); if(lr && lr.fio2) d.fio2 = lr.fio2; }
+      if(!hasAny(d, ABG_F.filter(function(x){ return x[0] !== "fio2"; }).map(function(x){ return x[0]; }))){ toast("Enter the ABG values first"); return; }
+      var item = {id:uid(), at:dtISO(d.at)}; ABG_F.forEach(function(x){ if(d[x[0]]) item[x[0]] = d[x[0]]; });
+      return commit(function(b){ item.by = b; return {ops:[OP("push", "abg", item, 30)], log:"ABG: " + ["ph","pco2","po2","hco3","lac"].filter(function(k){ return item[k]; }).map(function(k){ return ABG_F.filter(function(x){ return x[0] === k; })[0][1] + " " + item[k]; }).join(", ")}; }, "ABG saved").then(function(ok){ if(ok){ var fi = f.fio2.value; f.reset(); f.fio2.value = fi; f.at.value = localDT(); view.dirty.abg = false; } });
+    },
+    addLine: function(f){
+      var d = formData(f); if(!d.detail && d.kind === "Other"){ toast("Add the details"); return; }
+      return commit(function(b, now){ return {ops:[OP("push", "lines", {id:uid(), kind:d.kind, detail:d.detail, site:d.site, start:d.start || today(), at:now, by:b}, 200)], log:"Started " + d.kind + ": " + (d.detail || "") + (d.site ? " (" + d.site + ")" : "")}; }, "Added").then(function(ok){ if(ok){ f.reset(); f.start.value = today(); } });
+    },
+    addAbx: function(f){
+      var d = formData(f); if(!d.drug){ toast("Choose the antibiotic"); return; }
+      var txt = "Started " + d.drug + " " + [d.dose, d.route, d.freq].filter(Boolean).join(" ");
+      return commit(function(b, now){ return {fields:{abxChangedAt:now, abxChangedBy:b, abxLastChange:txt}, ops:[OP("push", "abx", {id:uid(), drug:d.drug, dose:d.dose, route:d.route, freq:d.freq, start:d.start || today(), reason:d.reason, at:now, by:b, hist:[{at:now, by:b, text:"Started " + [d.dose, d.route, d.freq].filter(Boolean).join(" ") + (d.reason ? " (" + d.reason + ")" : "")}]}, 100)], log:txt}; }, "Antibiotic started").then(function(ok){ if(ok){ f.reset(); f.start.value = today(); } });
+    },
+    addIo: function(f){
+      var d = formData(f);
+      if(!hasAny(d, IO_IN.concat(IO_OUT).map(function(x){ return x[0]; }))){ toast("Enter at least one amount"); return; }
+      var item = {id:uid(), at:dtISO(d.at), period:d.period}; IO_IN.concat(IO_OUT).forEach(function(x){ if(d[x[0]]) item[x[0]] = d[x[0]]; });
+      return commit(function(b){ item.by = b; return {ops:[OP("push", "io", item, 120)], log:"I/O " + d.period + ": in " + ioSum(item, IO_IN) + " ml, out " + ioSum(item, IO_OUT) + " ml"}; }, "Saved").then(function(ok){ if(ok){ f.reset(); f.at.value = localDT(); view.dirty.io = false; } });
+    },
+    addLab: function(f){
+      var d = formData(f), vals = {};
+      Object.keys(d).forEach(function(k){ if(k.indexOf("t:") === 0 && d[k]) vals[k.slice(2)] = d[k]; });
+      if(!Object.keys(vals).length){ toast("Enter at least one result"); return; }
+      return commit(function(b){ return {ops:[OP("push", "labs", {id:uid(), at:dtISO(d.at), vals:vals, by:b}, 90)], log:"Lab report " + stamp(dtISO(d.at)) + ": " + Object.keys(vals).map(function(k){ return k + " " + vals[k]; }).join(", ")}; }, "Report saved").then(function(ok){ if(ok){ f.reset(); f.at.value = localDT(); view.dirty.lab = false; } });
+    },
+    addCult: function(f){
+      var d = formData(f);
+      return commit(function(b, now){ return {ops:[OP("push", "cultures", {id:uid(), sample:d.sample, site:d.site, sent:d.sent || today(), status:"sent", at:now, by:b, files:[]}, 120)], log:"Culture sent: " + d.sample + (d.site ? " (" + d.site + ")" : "")}; }, "Culture added").then(function(ok){ if(ok){ f.reset(); f.sent.value = today(); } });
+    },
+    addHo: function(f){
+      var text = f.text.value.trim(); if(!text){ f.text.focus(); return; }
+      return commit(function(b, now){ return {ops:[OP("push", "handover", {id:uid(), at:now, by:b, text:text}, 80)], log:"Handover written"}; }, "Handover saved").then(function(ok){ if(ok){ f.reset(); view.dirty.ho = false; } });
+    }
+  };
+
+  /* ---------- modals for editing ---------- */
+  function find(list, id){ return (list || []).filter(function(x){ return x.id === id; })[0]; }
+  function editModal(title, formHtml, onSave, wide){
+    modal('<div class="modal-h"><h2>' + esc(title) + '</h2><button class="x" type="button" data-close aria-label="Close">×</button></div><form id="mform">' + formHtml + '<div class="r" style="margin-top:14px"><button class="btn" type="button" data-close>Cancel</button><button class="btn primary" type="submit">Save</button></div></form>',
+      function(root, close){
+        var f = $("#mform", root);
+        f.addEventListener("change", function(e){ if(e.target.dataset.chg === "mgmt") f.dataset.mgmt = e.target.value; });
+        f.addEventListener("submit", async function(e){
+          e.preventDefault(); var btn = $("button[type=submit]", f); btn.disabled = true;
+          var ok = await onSave(formData(f)); if(ok) close(); else btn.disabled = false;
+        });
+      }, null, wide);
+  }
+
+  function chartModal(title, body){
+    modal('<div class="modal-h"><h2>' + esc(title) + '</h2><button class="x" type="button" data-close aria-label="Close">×</button></div>' + body, null, null, true);
+  }
+
+  async function viewFile(id, name){
+    var w = modal('<div class="modal-h"><h2>' + esc(name) + '</h2><button class="x" type="button" data-close aria-label="Close">×</button></div><div class="viewer" id="fview"><p>Loading…</p></div>', null, null, true);
+    try{
+      var f = await Store.file(id);
+      var bin = atob(f.b64), arr = new Uint8Array(bin.length);
+      for(var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+      var url = URL.createObjectURL(new Blob([arr], {type:f.mime}));
+      $("#fview", w).innerHTML = (/^image\//.test(f.mime) ? '<img src="' + url + '" alt="' + esc(name) + '">' : '<iframe src="' + url + '" title="' + esc(name) + '"></iframe>') +
+        '<div class="r" style="margin-top:10px"><a class="btn" href="' + url + '" target="_blank" rel="noopener">Open full screen</a></div>';
+    }catch(e){ $("#fview", w).innerHTML = '<p>Couldn\'t open the file. ' + esc(writeErr(e)) + '</p>'; }
+  }
+
+  function readAsDataURL(file){ return new Promise(function(res, rej){ var r = new FileReader(); r.onload = function(){ res(r.result); }; r.onerror = rej; r.readAsDataURL(file); }); }
+  function loadImg(src){ return new Promise(function(res, rej){ var i = new Image(); i.onload = function(){ res(i); }; i.onerror = rej; i.src = src; }); }
+  async function prepFile(file){
+    if(/^image\//.test(file.type)){
+      var src = await readAsDataURL(file);
+      if(file.size < 900000) return {mime:file.type, name:file.name, b64:src.split(",")[1]};
+      var img = await loadImg(src), s = Math.min(1, 2200/Math.max(img.width, img.height));
+      var c = document.createElement("canvas"); c.width = Math.round(img.width*s); c.height = Math.round(img.height*s);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      return {mime:"image/jpeg", name:file.name.replace(/\.[^.]+$/, "") + ".jpg", b64:c.toDataURL("image/jpeg", 0.85).split(",")[1]};
+    }
+    if(file.type !== "application/pdf") throw {code:"file"};
+    if(file.size > 8e6) throw {code:"file"};
+    return {mime:file.type, name:file.name, b64:(await readAsDataURL(file)).split(",")[1]};
+  }
+
+  /* ---------- actions ---------- */
+  var ACTS = {
+    close: function(){ closeView(); },
+    tab: function(el){ switchTab(el.dataset.tab); },
+    delPatient: function(el, p){
+      confirmBox("Delete this record?", "Bed " + (p.bed || "–") + " · " + (p.name || "") + " and all their charts will be removed for everyone. To move a patient out of the ICU, set the condition to \"Shifted / discharged\" instead.", "Delete", async function(){
+        try{ await Store.remove(p.id); closeView(true); toast("Record deleted"); }catch(e){ toast(writeErr(e)); }
+      });
+    },
+    delIv: function(el){ var id = el.dataset.id; commit(function(){ return {ops:[OP("del", "interventions", id)]}; }); },
+    editDx: function(el, p){
+      var d = find(p.dx, el.dataset.id); if(!d) return;
+      editModal("Edit diagnosis", dxFormHtml(d, "x").replace(/^<form[^>]*>/, "").replace(/<\/form>$/, ""), function(v){
+        return commit(function(b, now){ return {ops:[OP("upd", "dx", d.id, {text:v.text, mgmt:v.mgmt, procedure:v.mgmt === "surgical" ? v.procedure : "", surgeryDate:v.mgmt === "surgical" ? v.surgeryDate : "", plan:v.plan, at:now, by:b})], log:"Diagnosis updated: " + v.text}; }, "Saved");
+      });
+      var mf = $("#mform"); if(mf) mf.dataset.mgmt = d.mgmt || "conservative";
+    },
+    delDx: function(el, p){
+      var d = find(p.dx, el.dataset.id); if(!d) return;
+      confirmBox("Delete diagnosis?", d.text + " and its plan will be removed.", "Delete", function(){ commit(function(){ return {ops:[OP("del", "dx", d.id)], log:"Diagnosis removed: " + d.text}; }, "Removed"); });
+    },
+    vitChart: function(el, p){
+      var list = byTime(p.vitals);
+      chartModal("Vital chart · Bed " + (p.bed || "") + " · " + (p.name || ""), list.length ? trendSvg(list) + '<p class="hint" style="margin:0">' + list.length + ' readings (the last 120 are kept), newest first. Red = outside the usual range.</p>' + vitTable(list) : '<p>No readings yet.</p>');
+    },
+    paramChart: function(el, p){
+      var list = byTime(p.resp);
+      chartModal("Parameter chart · Bed " + (p.bed || "") + " · " + (p.name || ""), list.length ? '<p class="hint" style="margin:0">' + list.length + ' updates (the last 40 are kept), newest first.</p><div class="tablewrap"><table class="t"><thead><tr><th>Time</th><th>Support</th><th>Mode</th>' + RESP_F.map(function(x){ return "<th>" + x[1] + "</th>"; }).join("") + '<th>Vt ml/kg</th><th>By</th></tr></thead><tbody>' +
+        list.map(function(r){ var w = num(p.weight), vt = num(r.vt); return '<tr><td class="num">' + stamp(r.at) + '</td><td>' + esc(r.support || "") + '</td><td>' + esc(r.mode || "") + '</td>' + RESP_F.map(function(x){ return '<td class="num">' + esc(r[x[0]] || "") + '</td>'; }).join("") + '<td class="num">' + (w && vt ? (vt/w).toFixed(1) : "") + '</td><td><span class="by">' + esc(r.by || "") + '</span></td></tr>'; }).join("") +
+        '</tbody></table></div>' : '<p>No parameters yet.</p>');
+    },
+    abgChart: function(el, p){
+      var all = byTime(p.abg);
+      function render(showAll){
+        var list = showAll ? all : all.slice(0, 5);
+        return '<p class="hint" style="margin:0">' + (showAll ? "All " + all.length : "Last " + list.length + " of " + all.length) + ' ABG reports, newest first. Red = outside the usual range.</p>' +
+          '<div class="tablewrap"><table class="t"><thead><tr><th class="rowh">Parameter</th>' + list.map(function(a){ return "<th>" + stamp(a.at) + "</th>"; }).join("") + '</tr></thead><tbody>' +
+          ABG_F.map(function(x){ return '<tr><td class="rowh">' + x[1] + (x[2] ? ' <span class="by">' + x[2] + '</span>' : "") + '</td>' + list.map(function(a){ return '<td class="num' + (out(a[x[0]], x[3], x[4]) ? " ab" : "") + '">' + esc(a[x[0]] || "") + '</td>'; }).join("") + '</tr>'; }).join("") +
+          '<tr><td class="rowh">P/F ratio</td>' + list.map(function(a){ var pf = pfOf(a.po2, a.fio2); return '<td class="num' + (pf && pf < 300 ? " ab" : "") + '">' + (pf || "") + '</td>'; }).join("") + '</tr>' +
+          '<tr><td class="rowh">By</td>' + list.map(function(a){ return '<td><span class="by">' + esc(a.by || "") + '</span></td>'; }).join("") + '</tr></tbody></table></div>' +
+          (all.length > 5 ? '<div class="r"><button class="btn small" type="button" id="abgAll">' + (showAll ? "Show last 5" : "Show all " + all.length) + '</button></div>' : "");
+      }
+      if(!all.length){ chartModal("ABG chart", "<p>No ABG reports yet.</p>"); return; }
+      var showAll = false;
+      chartModal("ABG chart · Bed " + (p.bed || "") + " · " + (p.name || ""), '<div id="abgBox">' + render(false) + '</div>');
+      var box = $("#abgBox");
+      box.addEventListener("click", function(e){ if(e.target.id === "abgAll"){ showAll = !showAll; box.innerHTML = render(showAll); } });
+    },
+    editLine: function(el, p){
+      var l = find(p.lines, el.dataset.id); if(!l) return;
+      editModal("Edit " + l.kind, '<div class="fgrid">' + F("detail", "Details", "text", 6, {value:l.detail}) + F("site", "Site", "text", 3, {value:l.site}) + F("start", "Started / inserted on", "date", 3, {value:l.start}) + '</div>', function(v){
+        return commit(function(b, now){ return {ops:[OP("upd", "lines", l.id, {detail:v.detail, site:v.site, start:v.start, at:now, by:b})], log:l.kind + " updated: " + v.detail}; }, "Saved");
+      });
+    },
+    stopLine: function(el, p){
+      var l = find(p.lines, el.dataset.id); if(!l) return;
+      editModal((l.kind === "Infusion" ? "Stop " : "Remove ") + l.kind, '<p>' + esc(l.detail || l.kind) + ' · Day ' + (dayN(l.start) || "?") + '</p>' + F("note", "Note (optional)", "text", 6, {ph:"e.g. Weaned off, blocked, replaced"}), function(v){
+        return commit(function(b, now){ return {ops:[OP("upd", "lines", l.id, {removedAt:now, removedBy:b, removeNote:v.note})], log:(l.kind === "Infusion" ? "Stopped " : "Removed ") + l.kind + ": " + (l.detail || "") + " (day " + dayN(l.start) + ")"}; }, "Done");
+      });
+    },
+    changeAbx: function(el, p){
+      var a = find(p.abx, el.dataset.id); if(!a) return;
+      editModal("Change " + a.drug, '<p>Change the dose or frequency, or switch to another antibiotic. Staff will see an alert until they mark it as seen.</p><div class="fgrid">' +
+        F("drug", "Antibiotic", "text", 3, {list:"dl_abx", value:a.drug}) + F("dose", "Dose", "text", 3, {value:a.dose}) +
+        F("route", "Route", "select", 3, {opts:["IV","PO / RT","IM","Nebulised","Topical"], value:a.route}) + F("freq", "Frequency", "text", 3, {list:"dl_freq", value:a.freq}) +
+        F("why", "Reason for change", "text", 6, {ph:"e.g. As per culture sensitivity, renal dose adjustment"}) + '</div>', function(v){
+        if(!v.drug){ toast("Antibiotic name is needed"); return Promise.resolve(false); }
+        return commit(function(b, now){
+          var ops, txt;
+          if(v.drug.toLowerCase() !== String(a.drug).toLowerCase()){
+            txt = "Switched " + a.drug + " → " + v.drug + " " + [v.dose, v.route, v.freq].filter(Boolean).join(" ") + (v.why ? " (" + v.why + ")" : "");
+            ops = [OP("upd", "abx", a.id, {stoppedAt:now, stoppedBy:b, hist:(a.hist || []).concat([{at:now, by:b, text:"Stopped, switched to " + v.drug + (v.why ? " (" + v.why + ")" : "")}])}),
+                   OP("push", "abx", {id:uid(), drug:v.drug, dose:v.dose, route:v.route, freq:v.freq, start:today(), reason:v.why, at:now, by:b, hist:[{at:now, by:b, text:"Started in place of " + a.drug + (v.why ? " (" + v.why + ")" : "")}]}, 100)];
+          } else {
+            txt = a.drug + " changed to " + [v.dose, v.route, v.freq].filter(Boolean).join(" ") + (v.why ? " (" + v.why + ")" : "");
+            ops = [OP("upd", "abx", a.id, {dose:v.dose, route:v.route, freq:v.freq, changedAt:now, changedBy:b, hist:(a.hist || []).concat([{at:now, by:b, text:"Changed from " + [a.dose, a.route, a.freq].filter(Boolean).join(" ") + " to " + [v.dose, v.route, v.freq].filter(Boolean).join(" ") + (v.why ? " (" + v.why + ")" : "")}])})];
+          }
+          return {fields:{abxChangedAt:now, abxChangedBy:b, abxLastChange:txt}, ops:ops, log:txt};
+        }, "Antibiotic changed");
+      });
+    },
+    stopAbx: function(el, p){
+      var a = find(p.abx, el.dataset.id); if(!a) return;
+      editModal("Stop " + a.drug, '<p>Day ' + (dayN(a.start) || "?") + ' of ' + esc(a.drug) + '.</p>' + F("why", "Reason", "text", 6, {ph:"e.g. Course completed, culture negative"}), function(v){
+        var txt = "Stopped " + a.drug + " on day " + dayN(a.start) + (v.why ? " (" + v.why + ")" : "");
+        return commit(function(b, now){ return {fields:{abxChangedAt:now, abxChangedBy:b, abxLastChange:txt}, ops:[OP("upd", "abx", a.id, {stoppedAt:now, stoppedBy:b, hist:(a.hist || []).concat([{at:now, by:b, text:"Stopped on day " + dayN(a.start) + (v.why ? " (" + v.why + ")" : "")}])})], log:txt}; }, "Antibiotic stopped");
+      });
+    },
+    abxSeen: function(){ commit(function(b, now){ return {fields:{abxSeenAt:now, abxSeenBy:b}, log:"Antibiotic change seen"}; }, "Marked as seen"); },
+    delIo: function(el){ var id = el.dataset.id; confirmBox("Delete this entry?", "This intake/output entry will be removed.", "Delete", function(){ commit(function(){ return {ops:[OP("del", "io", id)], log:"Deleted an I/O entry"}; }); }); },
+    pickLabs: function(el, p){
+      var sel = labTests(p);
+      var custom = sel.filter(function(t){ return !LAB[t]; });
+      modal('<div class="modal-h"><h2>Select investigations</h2><button class="x" type="button" data-close aria-label="Close">×</button></div><p>Ticked tests appear in the report form and the serial chart for this patient.</p><form id="pickF" class="labpick">' +
+        LAB_GROUPS.map(function(g){ return '<h4>' + g[0] + '</h4><div class="grp">' + g[1].map(function(t){ return '<label><input type="checkbox" name="t" value="' + esc(t[0]) + '"' + (sel.indexOf(t[0]) >= 0 ? " checked" : "") + '>' + esc(t[0]) + '</label>'; }).join("") + '</div>'; }).join("") +
+        '<h4>Other tests</h4><div class="grp" id="custGrp">' + custom.map(function(t){ return '<label><input type="checkbox" name="t" value="' + esc(t) + '" checked>' + esc(t) + '</label>'; }).join("") + '</div>' +
+        '<div class="addrow"><input type="text" id="custIn" placeholder="Add another test, e.g. Serum ammonia" aria-label="Other test"><button class="btn" type="button" id="custAdd">Add</button></div>' +
+        '<div class="r" style="margin-top:14px"><button class="btn" type="button" data-close>Cancel</button><button class="btn primary" type="submit">Save selection</button></div></form>',
+        function(root, close){
+          var f = $("#pickF", root);
+          function addCustom(){ var v = $("#custIn", root).value.trim(); if(!v) return; $("#custGrp", root).insertAdjacentHTML("beforeend", '<label><input type="checkbox" name="t" value="' + esc(v) + '" checked>' + esc(v) + '</label>'); $("#custIn", root).value = ""; }
+          $("#custAdd", root).onclick = addCustom;
+          $("#custIn", root).addEventListener("keydown", function(e){ if(e.key === "Enter"){ e.preventDefault(); addCustom(); } });
+          f.addEventListener("submit", async function(e){
+            e.preventDefault();
+            var tests = formData(f).t || [];
+            if(!tests.length){ toast("Tick at least one test"); return; }
+            var ok = await commit(function(){ return {fields:{labTests:tests}}; }, "Selection saved");
+            if(ok){ close(); renderTab(); }
+          });
+        }, null, true);
+    },
+    delLab: function(el){ var id = el.dataset.id; confirmBox("Delete this report?", "All values in this lab report column will be removed.", "Delete", function(){ commit(function(){ return {ops:[OP("del", "labs", id)], log:"Deleted a lab report"}; }); }); },
+    editCult: function(el, p){
+      var c = find(p.cultures, el.dataset.id); if(!c) return;
+      editModal("Culture report · " + c.sample, '<div class="fgrid">' +
+        F("status", "Result", "select", 3, {opts:CULT_STATUS, value:c.status}) + F("count", "Colony count", "text", 3, {value:c.count, ph:"e.g. >10⁵ CFU/ml"}) +
+        F("organism", "Organism(s) isolated", "text", 6, {value:c.organism, list:"dl_org", ph:"Separate two organisms with a comma"}) +
+        F("sensitive", "Sensitive to", "textarea", 6, {value:c.sensitive, ph:"e.g. Colistin, Tigecycline, Minocycline"}) +
+        F("intermediate", "Intermediate", "text", 6, {value:c.intermediate}) +
+        F("resistant", "Resistant to", "textarea", 6, {value:c.resistant, ph:"e.g. Meropenem, Pip-taz, Ceftriaxone, Amikacin"}) + '</div>', function(v){
+        var st = (CULT_STATUS.filter(function(s){ return s[0] === v.status; })[0] || [])[1];
+        return commit(function(b, now){ return {ops:[OP("upd", "cultures", c.id, {status:v.status, count:v.count, organism:v.status === "growth" || v.status === "contam" ? v.organism : "", sensitive:v.sensitive, intermediate:v.intermediate, resistant:v.resistant, reportAt:now, reportBy:b})], log:"Culture report (" + c.sample + "): " + st + (v.organism && v.status === "growth" ? " · " + v.organism : "")}; }, "Report saved");
+      }, true);
+    },
+    delCult: function(el, p){
+      var c = find(p.cultures, el.dataset.id); if(!c) return;
+      confirmBox("Delete this culture?", c.sample + " sent " + dshort(c.sent) + " will be removed. Uploaded files stay in the Google Drive folder.", "Delete", function(){ commit(function(){ return {ops:[OP("del", "cultures", c.id)], log:"Deleted culture: " + c.sample}; }); });
+    },
+    viewFile: function(el){ viewFile(el.dataset.file, el.dataset.name); }
+  };
+
+  /* ---------- patient view events ---------- */
+  var viewEl = $("#view");
+  viewEl.addEventListener("click", function(e){
+    var el = e.target.closest("[data-act]"); if(!el || !viewEl.contains(el)) return;
+    var fn = ACTS[el.dataset.act]; if(fn) fn(el, cur());
+  });
+  viewEl.addEventListener("submit", function(e){
+    var f = e.target.closest("form[data-form]"); if(!f) return;
+    e.preventDefault();
+    var fn = FORMS[f.dataset.form]; if(!fn) return;
+    var btn = $("button[type=submit]", f); if(btn) btn.disabled = true;
+    Promise.resolve(fn(f, cur())).then(function(){ if(btn) btn.disabled = false; }, function(){ if(btn) btn.disabled = false; });
+  });
+  viewEl.addEventListener("input", function(e){
+    var f = e.target.closest("form[data-dirty]"); if(f) view.dirty[f.dataset.dirty] = true;
+    var p = cur(); if(!p) return;
+    if(f && f.dataset.form === "addVit"){ var m = mapOf({sbp:f.sbp.value, dbp:f.dbp.value}); $("#vitCalc").innerHTML = m ? "MAP <b>" + m + "</b> mmHg" : ""; }
+    if(f && f.dataset.form === "addResp"){ var w = num(p.weight), vt = num(f.vt.value); $("#respCalc").innerHTML = w && vt ? "Vt <b>" + (vt/w).toFixed(1) + "</b> ml/kg (actual body weight)" : ""; }
+    if(f && f.dataset.form === "addAbg"){ var pf = pfOf(f.po2.value, f.fio2.value); $("#abgCalc").innerHTML = pf ? "P/F ratio <b>" + pf + "</b>" : ""; }
+  });
+  viewEl.addEventListener("change", function(e){
+    var t = e.target, p = cur(); if(!p) return;
+    var chg = t.dataset.chg;
+    if(chg === "mgmt"){ var f = t.closest("form"); if(f) f.dataset.mgmt = t.value; }
+    else if(chg === "iv"){
+      var id = t.dataset.id, done = t.checked, it = find(p.interventions, id);
+      commit(function(b, now){ return {ops:[OP("upd", "interventions", id, {done:done, doneAt:done ? now : null, doneBy:done ? b : null})], log:(done ? "Done: " : "Reopened: ") + (it ? it.text : "")}; });
+    }
+    else if(chg === "upload"){
+      var file = t.files && t.files[0]; if(!file) return;
+      var cid = t.dataset.id;
+      (async function(){
+        var by = await needSig(); if(!by){ t.value = ""; return; }
+        toast("Uploading " + file.name + "…");
+        try{ var x = await prepFile(file); await Store.upload({id:p.id, cid:cid, name:x.name, mime:x.mime, b64:x.b64, by:by}); toast("Report uploaded"); }
+        catch(err){ toast(writeErr(err)); }
+        t.value = "";
+      })();
+    }
+  });
+
+  /* ---------- gate ---------- */
+  function showGate(msg){ $("#gate").hidden = false; $("#gateErr").textContent = msg || ""; setTimeout(function(){ $("#pinInput").focus(); }, 30); }
+  function submitPin(){
+    var v = $("#pinInput").value.trim(); if(!v) return;
+    $("#pinGo").disabled = true; $("#gateErr").textContent = "";
+    Store.pin = v;
+    Store.call("list").then(function(r){
+      LS.set(PKEY, v); $("#pinInput").value = ""; $("#gate").hidden = true; $("#pinGo").disabled = false;
+      Store.take(r); Store.startPolling();
+    }, function(e){
+      Store.pin = ""; $("#pinGo").disabled = false;
+      $("#gateErr").textContent = e.code === "pin" ? "Wrong PIN. Try again." : "Couldn't connect. Check the internet and try again.";
+    });
+  }
+
+  /* ---------- page events ---------- */
+  $("#q").addEventListener("input", function(e){ query = e.target.value.trim(); paintGrid(); });
+  $("#tabs").addEventListener("click", function(e){ var b = e.target.closest("[data-f]"); if(!b) return; filter = b.dataset.f; paintFilters(); paintGrid(); });
+  $("#grid").addEventListener("click", function(e){ var c = e.target.closest("[data-open]"); if(c) openPatient(c.dataset.open, "sum"); });
+  $("#empty").addEventListener("click", function(e){ if(e.target.closest("[data-admit]")) openAdmit(); });
+  $("#admitBtn").onclick = openAdmit;
+  $("#sigBtn").onclick = function(){ askSig(); };
+  $("#printBtn").onclick = function(){ paintPrint(); window.print(); };
+  window.addEventListener("beforeprint", paintPrint);
+  $("#refreshBtn").onclick = function(){ $("#sync").textContent = "syncing…"; Store.refresh().then(paintSync); };
+  $("#lockBtn").onclick = function(){
+    if(Store.mode === "local"){ toast("Lock works once the page is connected to Google"); return; }
+    closeView(true); Store.pin = ""; LS.set(PKEY, ""); patients = []; paintAll(); showGate("");
+  };
+  $("#gateForm").addEventListener("submit", submitPin);
+  document.addEventListener("keydown", function(e){
+    if(e.key !== "Escape") return;
+    var m = $("#modalRoot").lastElementChild;
+    if(m && m._cancel){ m._cancel(); return; }
+    if(view.id) closeView();
+  });
+
+  /* ---------- boot ---------- */
+  paintSig(); paintClock(); paintAll(); paintSync();
+  setInterval(function(){ paintClock(); paintAll(); }, 60000);
+  setInterval(paintSync, 10000);
+  Store.init(function(list){ patients = list || []; loaded = true; paintAll(); refreshView(); });
+  if(Store.mode === "local") showBanner("Preview mode: this copy isn't connected to Google yet, so changes are saved on this device only.");
+})();
+</script>
